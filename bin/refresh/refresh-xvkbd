@@ -1,0 +1,34 @@
+echo 'args' $1
+# windowtitle=$(sed -ne "s/<title>\(.*\)<\/title>/\1/p" "$1")
+# windowtitle="Scaffold - Chromium"
+windowtitle=$1
+
+# if [ $? != 0 ]; then
+#     echo "couldn't find <title> in file" $1 1>&2
+#     exit 1
+# fi
+
+# get rid of leading/trailing whitespace
+windowtitle=$(echo -n $windowtitle)
+
+# i# f [ -z "$windowtitle" ]; then
+#     echo "couldn't find <title> in file" $1 1>&2
+#     exit 1
+# fi
+
+oldid=$(xdotool getwindowfocus)
+#bloody xdotool gets 2 window ids and doesn't let me combine --class and --name
+#to narrow down the result!!!
+
+# id=$(xdotool search --onlyvisible --name  "$windowtitle"|tail -1 )
+# echo $id
+
+if [ $? != 0 ]; then
+    echo 'window not found' 1>&2
+    exit 1
+fi
+# xdotool  windowactivate --sync $id
+# xdotool key 'ctrl+r'
+
+xvkbd -window $windowtitle -text "\Cr"
+xdotool windowactivate --sync $oldid

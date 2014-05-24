@@ -1,0 +1,1 @@
+./bin/build-forever & node server/server.js

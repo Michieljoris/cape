@@ -1,0 +1,9 @@
+#!/bin/sh
+echo `basename $PWD`
+if [ -n "$1" ] ; then
+    forever -a -l $1 start server/server.js
+else
+    forever -a -l `basename $PWD` start server/server.js
+fi
+    
+    

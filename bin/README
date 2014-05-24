@@ -1,0 +1,3 @@
+Execute 
+echo "yoururl:yourport" > ./bin/URL
+The file bin/URL is used in the build scripts to determine what websocket to send the message "reload" to when build is finished.

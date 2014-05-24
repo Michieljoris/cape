@@ -1,0 +1,48 @@
+* TODO Remove files from www/js and www/css and add bower dependencies
+  
+* persona:
+Add this script or download and include -that-
+<script src="https://login.persona.org/include.js"></script>
+Include persona-buttons.css
+Include cookie.js
+Include persona.js with the initPersona function
+Call it before the app starts.
+Add these functions to a controller:
+
+    $scope.signout = function($event) {
+        $event.preventDefault();
+        console.log('Logging out');
+        navigator.id.logout();
+        
+    };
+    
+    $scope.signin = function($event) {
+        $event.preventDefault();
+        console.log('Logging in');
+        navigator.id.request();
+    };
+    
+Have this html snippet in the controller's scope somewhere:    
+     <div ng-show="true">
+       <a ng-hide="signedIn" href="#" class="persona-button blue" ng-click="signin($event)"><span>Sign in</span></a>
+       <a ng-show="signedIn" href="#" class="persona-button blue" ng-click="signout($event)"><span>Sign out</span></a>
+     </div>
+     
+Add this to the server configuration to turn sessions on: 
+    ,sessions: {
+        expires: 30*24*60*60  //one month
+    }
+Add the right emails to authorized_emails.js
+exports.list =  
+    [
+        'michieljoris@gmail.com'
+    ];
+
+Add this to server.js
+,signin = require("./signin.js")
+,signout = require("./signout.js")
+Add this to the post handlers
+        ,"/signin": signin
+        ,"/signout": signout
+After successfull signin $scope.signedIn is the user's email address	
+	

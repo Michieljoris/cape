@@ -1,0 +1,2 @@
+URL=`cat bin/URL`
+nodemon node_modules/html-builder/bin/buildMonitor.js -s ws://$URL
