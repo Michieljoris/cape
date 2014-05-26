@@ -1,27 +1,41 @@
 project
 --------
 
+Install couchdb using a package manager, or follow instructions on
+[build-couchdb](https://github.com/jhs/build-couchdb).
+
+To start a couchdb instance run bin/couchdb. It loads the config from
+bin/couch.ini.
+
+
+
+
+
+
+
+
+
 [Description]
 
 Install:
 
-    npm install cap
+    npm install cape
 	
 Add dependency to your project with
 
-    "cap": "git@github.com/Michieljoris/cap"
+    "cape": "git@github.com/Michieljoris/cap"
 	
 or
 
-	"cap": "*"
+	"cape": "*"
 
 Require in a module:
 
-    var cap = require('cap');
+    var cape = require('cap');
 
 Use:
 
-See [documentation](https://rawgithub.com/Michieljoris/cap/master/docs/cap.html).
+See [documentation](https://rawgithub.com/Michieljoris/cape/master/docs/cap.html).
 
 
 

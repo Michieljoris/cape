@@ -1,0 +1,66 @@
+
+Apache CouchDB has started, time to relax.
+
+Apache CouchDB has started, time to relax.
+
+Apache CouchDB has started, time to relax.
+Apache CouchDB 1.5.0 (LogLevel=info) is starting.
+Apache CouchDB has started. Time to relax.
+[info] [<0.32.0>] Apache CouchDB has started on http://127.0.0.1:8080/
+[info] [<0.135.0>] 127.0.0.1 - - GET / 200
+[info] [<0.135.0>] 127.0.0.1 - - GET /_utils 301
+[info] [<0.135.0>] 127.0.0.1 - - GET /_utils/ 200
+[info] [<0.135.0>] 127.0.0.1 - - GET /_utils/style/layout.css?0.11.0 200
+[info] [<0.150.0>] 127.0.0.1 - - GET /_utils/script/json2.js 200
+[info] [<0.149.0>] 127.0.0.1 - - GET /_utils/script/sha1.js 200
+[info] [<0.148.0>] 127.0.0.1 - - GET /_utils/script/jquery.js 200
+[info] [<0.146.0>] 127.0.0.1 - - GET /_utils/script/jquery.dialog.js 200
+[info] [<0.147.0>] 127.0.0.1 - - GET /_utils/script/jquery.couch.js 200
+[info] [<0.135.0>] 127.0.0.1 - - GET /_utils/script/futon.js 200
+[info] [<0.149.0>] 127.0.0.1 - - GET /_utils/script/futon.browse.js 200
+[info] [<0.146.0>] 127.0.0.1 - - GET /_utils/script/futon.format.js 200
+[info] [<0.148.0>] 127.0.0.1 - - GET /_utils/image/bg.png 200
+[info] [<0.149.0>] 127.0.0.1 - - GET /_utils/image/add.png 200
+[info] [<0.135.0>] 127.0.0.1 - - GET /_utils/image/thead.gif 200
+[info] [<0.146.0>] 127.0.0.1 - - GET /_utils/_sidebar.html 200
+[info] [<0.150.0>] 127.0.0.1 - - GET /_utils/image/spinner_33.gif 200
+[info] [<0.147.0>] 127.0.0.1 - - GET /_all_dbs 200
+[info] [<0.147.0>] 127.0.0.1 - - GET /_utils/image/logo.png 200
+[info] [<0.150.0>] 127.0.0.1 - - GET /_utils/image/sidebar-toggle.png 200
+[info] [<0.135.0>] 127.0.0.1 - - GET / 200
+[info] [<0.146.0>] 127.0.0.1 - - GET /_session 200
+[info] [<0.135.0>] 127.0.0.1 - - GET /_users/ 200
+[info] [<0.146.0>] 127.0.0.1 - - GET /_replicator/ 200
+[info] [<0.135.0>] 127.0.0.1 - - GET /_utils/image/progress.gif 200
+[info] [<0.146.0>] 127.0.0.1 - - GET /_utils/dialog/_create_database.html 200
+[info] [<0.146.0>] 127.0.0.1 - - GET /_utils/image/spinner_6b.gif 200
+[info] [<0.146.0>] 127.0.0.1 - - GET /_utils/dialog/_create_database.html 200
+[info] [<0.146.0>] 127.0.0.1 - - PUT /test/ 201
+[info] [<0.146.0>] 127.0.0.1 - - GET /_utils/database.html?test 200
+[info] [<0.146.0>] 127.0.0.1 - - GET /_utils/style/layout.css 200
+[info] [<0.135.0>] 127.0.0.1 - - GET /_utils/script/jquery.resizer.js 200
+[info] [<0.150.0>] 127.0.0.1 - - GET /_utils/script/jquery.suggest.js 200
+[info] [<0.150.0>] 127.0.0.1 - - GET /_utils/image/path.gif 200
+[info] [<0.148.0>] 127.0.0.1 - - GET /_utils/image/order-asc.gif 200
+[info] [<0.149.0>] 127.0.0.1 - - GET /_utils/image/thead-key.gif 200
+[info] [<0.146.0>] 127.0.0.1 - - GET /_utils/image/compact.png 200
+[info] [<0.135.0>] 127.0.0.1 - - GET /_utils/image/key.png 200
+[info] [<0.147.0>] 127.0.0.1 - - GET /_utils/image/delete.png 200
+[info] [<0.149.0>] 127.0.0.1 - - GET /_utils/_sidebar.html 200
+[info] [<0.147.0>] 127.0.0.1 - - GET /_utils/image/rarrow.png 200
+[info] [<0.148.0>] 127.0.0.1 - - GET /_config/query_servers/ 200
+[info] [<0.150.0>] 127.0.0.1 - - GET /test/_all_docs?startkey=%22_design%2F%22&endkey=%22_design0%22&include_docs=true 200
+[info] [<0.135.0>] 127.0.0.1 - - GET /test/_all_docs?limit=11 200
+[info] [<0.148.0>] 127.0.0.1 - - GET /_session 200
+[info] [<0.146.0>] 127.0.0.1 - - GET / 200
+[info] [<0.147.0>] 127.0.0.1 - - GET /_config/native_query_servers/ 200
+Apache CouchDB crashed, restarting in 5 seconds.
+Apache CouchDB has been shutdown.
+Apache CouchDB 1.5.0 (LogLevel=info) is starting.
+Apache CouchDB has started. Time to relax.
+[info] [<0.32.0>] Apache CouchDB has started on http://127.0.0.1:8080/
+
+Apache CouchDB has started, time to relax.
+[info] [<0.139.0>] 127.0.0.1 - - GET / 200
+[info] [<0.139.0>] 127.0.0.1 - - GET /favicon.ico 200
+[info] [<0.139.0>] 127.0.0.1 - - GET / 200

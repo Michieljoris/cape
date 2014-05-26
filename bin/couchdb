@@ -1,0 +1,1 @@
+~/opt/build-couchdb/build/bin/couchdb -a ./bin/couch.ini

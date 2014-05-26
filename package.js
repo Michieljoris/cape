@@ -28,16 +28,16 @@ module.exports = {
     //
     // Leave off redundant affixes like `node-package` or `package-js`. 
     // We know it is JavaScript for Node.
-    "name": "cap",
+    "name": "cape",
     // A single line, or sometimes slightly longer, description of our package.
-    "description": "Clone this project to scaffold a new (npm/node) project.",
+    "description": "Hoodie like libraries using couchdb",
     // [npm](http://npmjs.org) enforces the X.Y.Z semantic version 
     // scheme that is described at [http://semver.org/](http://semver.org/)
     // and we should follow this versioning for our package.
     //Comment out go auto increase version on execution of this file
     // "version": "0.1.0",
     // URL to the homepage for this package.
-    "homepage": "https://github.com/michieljoris/cap",
+    "homepage": "https://github.com/michieljoris/cape",
     // An array of keywords used to describe this package to search engines,
     // mainly for people searching within the npm universe.
     "keywords": [
@@ -46,7 +46,7 @@ module.exports = {
     // Where is the source of truth for this code, and what type of repo is it?
     "repository": {
         "type": "git",
-        "url": "https://github.com/michieljoris/cap.git"
+        "url": "https://github.com/michieljoris/cape.git"
     },
     // Every package should have at least one author. There are a couple of
     // formats for the author. I prefer the explicit object format as follows:
@@ -63,27 +63,27 @@ module.exports = {
     "licenses": [
         {
             "type": "MIT",
-            "url": "http://github.com/michieljoris/cap/blob/master/LICENSE.txt"
+            "url": "http://github.com/michieljoris/cape/blob/master/LICENSE.txt"
         }
     ],
     // If there is a file that should be loaded when require()ing this 
     // folder-as-a-package, declare this file here, relative to our package 
     // structure.
-    "main": "src/cap.js",
+    "main": "backend/backend-cape.js",
     // Essentially, which Node.js platforms do we support? These are glob
     // like expressions supported by the 
     // [npm semantic version parser](https://npmjs.org/doc/semver.html), 
     // and the below version means what it looks like: 
     //
     
-    //Installs a binary script called cap which is linked to
-    //./bin/cap in the local package.
+    //Installs a binary script called cape which is linked to
+    //./bin/cape in the local package.
 
-    //If we have installed this package globally using npm install cap
-    //-g we will be able to call this new command cap from anywhere on
+    //If we have installed this package globally using npm install cape
+    //-g we will be able to call this new command cape from anywhere on
     //our system.
     "bin": {
-	// "commit": "bin/cap.js"
+	// "commit": "bin/cape.js"
     },
     
     // require a Node.js installation that is greater than or equal to version 0.6.0
@@ -105,7 +105,10 @@ module.exports = {
         // "bb-server": "git://github.com/michieljoris/bb-server.git",
         // "html-builder": "git://github.com/michieljoris/html-builder.git",
         "fs-extra": "0.8.x"
-        
+        ,"dougs_vow": "*"
+        ,"follow": "*"
+        ,"vouchdb": "*"
+        // ,"multicouch": "*"
 	// "nodemailer": "*",
 	// "dbox": "*",
         // "nodemailer": "0.5.x",
@@ -144,7 +147,7 @@ module.exports = {
     //     npm run-script docs
     "scripts": {
         // "docs": "node node_modules/.bin/doccoh package.js"
-        "docs": "node node_modules/.bin/docco src/cap.js"
+        "docs": "node node_modules/.bin/docco backend/backend-cape.js"
     }
 };
 
