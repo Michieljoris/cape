@@ -178,3 +178,17 @@ https://github.com/iriscouch/browser-request/
  
  Detect security issues, large or small, in a CouchDB server
  https://github.com/iriscouch/audit_couchdb
+ 
+* pouchdb considerations
+** replication persistence
+They should never stop!!!
+https://github.com/HubSpot/offline/
+Automatically display online/offline indication to your users. #hubspot-open-source
+http://pouchdb.com/api.html#replication
+https://groups.google.com/forum/#!topic/pouchdb/9ywFZ6ceqNc
+https://www.bountysource.com/issues/1034011-persistent-replications?utm_campaign=plugin&utm_content=tracker%2F52197&utm_medium=issues&utm_source=github
+** replication size
+How much to replicate and how to dump old data?
+Without then deleting the docs on the server when removed from client in a
+synced replication?
+
