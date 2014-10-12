@@ -1,4 +1,121 @@
-* persona:
+* specs
+** mailbox msg:
+Reception: 
+type: signup|forgotpwd|confirm
+
+
+* TODO
+** lock down temp db
+** how to deal with backlog in mailboxes? 
+** put a validate_doc_update on the mailboxes!!  
+** enable cors for couchdb when initing
+otherwise browser can't access it!!!
+** if cb in mailbox is called with error auto fix it!!!
+** mailboxes need to be locked down:
+set security object
+add appropriate doc_validate_update
+** restart listeners to mailboxes when stopped
+** setup logrotate for couchdb!! 
+   http://wiki.apache.org/couchdb/Installing_on_Ubuntu
+   http://java.dzone.com/articles/how-install-couch-db-15-ubuntu
+** how to setup frontend cape.js?
+With modules? So then we need bb-server!
+But source needs to be in cape
+Or just test in node, just don't use node dependencies,
+and also test in test-cape now and then, to see if it has the same results?
+
+** set npm version dependencies!!  
+** setup basic comm between front and backend 
+** hide follow under vouchdb.changes in the node version of vouchdb  
+** replace jquery dependency in node and browser in vouchdb!!
+replace vouch_couch with vouch_cradle on node
+or factor out jquery on node   
+or replace with request:
+https://github.com/iriscouch/browser-request/
+
+   
+** couchdb needs to enable cors?
+   
+
+** couchdb is timing out the login and also the reps trying!!!
+   
+* research
+** other logins than couchdb native
+1. use couchdb pluggable auth mechanisms
+2. put nodejs in front, forward to couch, but use password.js or something to
+   authenticate via github/facebook/google/twitter etc   
+* resources
+ https://github.com/etrepum/couchperuser  
+ https://github.com/pegli/couchdb-dbperuser-provisioning/blob/master/lib/provision.js  
+ https://github.com/flatiron/cradle
+ https://www.npmjs.org/package/couchdb-expired
+ https://www.npmjs.org/package/couchdb-tools
+ 
+ using continuous for changes feed and has email queue example in tests:
+ https://github.com/mikeal/dbemitter
+
+ Convert an NPM package command-line program into a web page:
+ https://github.com/iriscouch/browser_bin
+ 
+ Detect security issues, large or small, in a CouchDB server
+ https://github.com/iriscouch/audit_couchdb
+ 
+* pouchdb considerations
+** replication persistence
+They should never stop!!!
+https://github.com/HubSpot/offline/
+Automatically display online/offline indication to your users. #hubspot-open-source
+http://pouchdb.com/api.html#replication
+https://groups.google.com/forum/#!topic/pouchdb/9ywFZ6ceqNc
+https://www.bountysource.com/issues/1034011-persistent-replications?utm_campaign=plugin&utm_content=tracker%2F52197&utm_medium=issues&utm_source=github
+** replication size
+How much to replicate and how to dump old data?
+Without then deleting the docs on the server when removed from client in a
+synced replication?
+
+* good to know
+  
+** couchdb needs to serve pages.. 
+  just load as attachment to doc and link to it as database/doc/attachment.html
+** start a coucbd instance
+   install build-couchdb, follow instructions in its readme
+   https://github.com/jhs/build-couchdb
+   see bin/couchdb and bin/couch.ini for starting it
+
+** using follow on node, and vouchdb.changes on browser.
+  longpoll on browser (vouchdb.changes), or perhaps event-source? 
+  http://couchdb.readthedocs.org/en/latest/api/database/changes.html#event-source
+   
+** install  and start docker with couchdb
+Install docker on Ubuntu 13.10 Saucy:
+ https://docs.docker.com/installation/ubuntulinux/#ubuntu-raring-1304-and-saucy-1310-64-bit
+Mint needs some extra packages, see bottom of page 
+https://registry.hub.docker.com/u/klaemo/couchdb/
+Start docker:
+docker run -d -p 5984:5984 --name couchdb klaemo/couchdb
+
+** reverse proxy for haproxy
+https://github.com/foosel/OctoPrint/wiki/Reverse-proxy-configuration-examples
+
+ction wait(couchdb, db, cb) {
+    
+    function change(error, change) {
+        if(!error) {
+            log(change);
+            log(db + ": Change " + change.seq + " has " + Object.keys(change.doc).length + " fields");
+        }
+        else log._e(error);
+    }
+
+    var config = {
+        db: 'http://' + couchdb.admin + ':' + couchdb.pwd + '@'  +
+            couchdb.url + '/' + db,
+        include_docs: true,
+        since: "now"
+    };
+        log(config);
+   l
+** persona:
 Add this script or download and include -that- <script
 src="https://login.persona.org/include.js"></script> Include persona-buttons.css
 Include cookie.js Include persona.js with the initPersona function Call it
@@ -28,167 +145,61 @@ require("./signout.js") Add this to the post handlers ,"/signin": signin
 email address
 	
 
-* good to know
-** start a coucbd instance
-   install build-couchdb, follow instructions in its readme
-   https://github.com/jhs/build-couchdb
-   see bin/couchdb and bin/couch.ini for starting it
-
-** using follow on node, and vouchdb.changes on browser.
-  longpoll on browser (vouchdb.changes), or perhaps event-source? 
-  http://couchdb.readthedocs.org/en/latest/api/database/changes.html#event-source
-   
-* couchdb doc
-** security object of a database:
-The security object consists of two compulsory elements, admins and members,
-which are used to specify the list of users and/or roles that have admin and
-members rights to the database respectively:
-
-    members: they can read all types of documents from the DB, and they can
-    write (and edit) documents to the DB except for design documents.
+* concepts 
+** defry, describe and delimit
+*** don't ever fucking repeat your self!
+   if yes -> refactor!! 
+*** describe what you're doing, 
+   clear logical flow, descriptive naming, choice comments, few or no corner case
+   handling or out of place logic, explicitly type or make clear what variables
+   are supposed to contain, use name params instead of list etc
+*** delimit
+break up in modules, pure/independant functions, not bigger than my head per
+function, clear global structure/architecture
+** modules with functions not objects with methods
+** librairies not frameworks
+** quotes
+*** Dijkstra:
+    Industry suffers from the managerial dogma that for the sake of stability
+    and continuity, the company should be independent of the competence of
+    individual employees.
     
-    admins: they have all the privileges of members plus the privileges: write
-    (and edit) design documents, add/remove database admins and members, set the
-    database revisions limit and execute temporary views against the
-    database. They can not create a database nor delete a database.
+** 12factor    
+   I. Codebase
+     One codebase tracked in revision control, many deploys
+   II. Dependencies
+     Explicitly declare and isolate dependencies
+   III. Config
+     Store config in the environment
+   IV. Backing Services
+     Treat backing services as attached resources
+   V. Build, release, run
+     Strictly separate build and run stages
+   VI. Processes
+     Execute the app as one or more stateless processes
+   VII. Port binding
+     Export services via port binding
+   VIII. Concurrency
+     Scale out via the process model
+   IX. Disposability
+     Maximize robustness with fast startup and graceful shutdown
+   X. Dev/prod parity
+     Keep development, staging, and production as similar as possible
+   XI. Logs
+     Treat logs as event streams
+   XII. Admin processes
+     Run admin/management tasks as one-off processes
     
-Both members and admins objects are contains two array-typed fields:
-
-    users: List of CouchDB user names roles: List of users roles
     
-Any other additional fields in the security object are optional. The entire
-security object is made available to validation and other internal functions so
-that the database can control and limit functionality.
+* doing
+make sample signup/confirm/forgotpwd/resetpwd/login pages
+- send msg to reception, so needs vouchdb
+- worker needs to be able to send emails 
+  
+signup:
+send signup msg to reception, with username, email and password 
 
-If both the names and roles fields of either the admins or members properties
-are empty arrays, it means the database has no admins or members.
+confirm:
+read uuid from url and send confirm msg to reception with uuid
 
-Having no admins, only server admins (with the reserved _admin role) are able to
-update design document and make other admin level changes.
-
-Having no members, any user can write regular documents (any non-design
-document) and read documents from the database.
-
-If there are any member names or roles defined for a database, then only
-authenticated users having a matching name or role are allowed to read documents
-from the database (or do a GET /{db} call).
-
-** _users database
-CouchDB uses special database (called _users by default) to store information
-about registered users. This is a system database – this means that while it
-shares common database API, there are some special security-related constraints
-applied and used agreements on documents structure. So how authentication
-database is different from others?
-
-Only administrators may browse list of all documents (GET /_users/_all_docs)
-Only administrators may listen changes feed (GET /_users/_changes)
-Only administrators may execute design functions like views, shows and others
-Only administrators may GET, PUT or DELETE any document (to be honest, that they
-always can do)
-
-There is special design document _auth that cannot be modified
-
-Every document (of course, except design documents) represents registered
-CouchDB users and belong to him
-
-Users may only access (GET /_users/org.couchdb.user:Jan) or modify (PUT
-/_users/org.couchdb.user:Jan) documents that they own.
-
-These draconian rules are reasonable: CouchDB cares about user’s personal
-information and doesn’t discloses it for everyone. Often, users documents are
-contains not only system information like login, password hash and roles, but
-also sensitive personal information like: real name, email, phone, special
-internal identifications and more - this is not right information that you want
-to share with the World.
-
-
-
-Users Documents
-
-Each CouchDB user is stored in document format. These documents are contains
-several mandatory fields, that CouchDB handles for correct authentication
-process:
-
-    - _id (string): Document ID. Contains user’s login with special prefix Why
-      org.couchdb.user: prefix?
-    - derived_key (string): PBKDF2 key
-    - name (string): User’s name aka login. Immutable e.g. you cannot rename
-      existed user - you have to create new one
-    - roles (array of string): List of user roles. CouchDB doesn’t provides any
-      builtin roles, so you’re free to define your own depending on your
-      needs. However, you cannot set system roles like _admin there. Also, only
-      administrators may assign roles to users - by default all users have no
-      roles
-    - password_sha (string): Hashed password with salt. Used for simple
-      password_scheme
-    - password_scheme (string): Password hashing scheme. May be simple or pbkdf2
-    - salt (string): Hash salt. Used for simple password_scheme
-    - type (string): Document type. Constantly have value user
-      
-    Additionally, you may specify any custom fields that are relates to the target
-    user. This is good place to store user’s private information because only he and
-    CouchDB administrators may browse it.
-    
-My note:   
-Database admins of the _users database can also modify users' roles.    
-
-http://wiki.apache.org/couchdb/EntityRelationship
-
-https://www.npmjs.org/package/CouchDBChanges
-https://github.com/hoodiehq/couchdb-db-notify
-https://github.com/hoodiehq/node-multicouch
-
-
-
-* TODO
-** setup logrotate for couchdb!! 
-   http://wiki.apache.org/couchdb/Installing_on_Ubuntu
-   http://java.dzone.com/articles/how-install-couch-db-15-ubuntu
-** how to setup frontend cape.js?
-With modules? So then we need bb-server!
-But source needs to be in cape
-Or just test in node, just don't use node dependencies,
-and also test in test-cape now and then, to see if it has the same results?
-
-** set npm version dependencies!!  
-** setup basic comm between front and backend 
-   
-** hide follow under vouchdb.changes in the node version of vouchdb  
-** replace jquery dependency in node and browser in vouchdb!!
-replace vouch_couch with vouch_cradle on node
-or factor out jquery on node   
-or replace with request:
-https://github.com/iriscouch/browser-request/
-
-   
-** couchdb needs to enable cors?
-   
-* resources
- https://github.com/etrepum/couchperuser  
- https://github.com/pegli/couchdb-dbperuser-provisioning/blob/master/lib/provision.js  
- https://github.com/flatiron/cradle
- https://www.npmjs.org/package/couchdb-expired
- https://www.npmjs.org/package/couchdb-tools
- 
- using continuous for changes feed and has email queue example in tests:
- https://github.com/mikeal/dbemitter
-
- Convert an NPM package command-line program into a web page:
- https://github.com/iriscouch/browser_bin
- 
- Detect security issues, large or small, in a CouchDB server
- https://github.com/iriscouch/audit_couchdb
- 
-* pouchdb considerations
-** replication persistence
-They should never stop!!!
-https://github.com/HubSpot/offline/
-Automatically display online/offline indication to your users. #hubspot-open-source
-http://pouchdb.com/api.html#replication
-https://groups.google.com/forum/#!topic/pouchdb/9ywFZ6ceqNc
-https://www.bountysource.com/issues/1034011-persistent-replications?utm_campaign=plugin&utm_content=tracker%2F52197&utm_medium=issues&utm_source=github
-** replication size
-How much to replicate and how to dump old data?
-Without then deleting the docs on the server when removed from client in a
-synced replication?
 

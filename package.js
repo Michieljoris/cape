@@ -108,8 +108,9 @@ module.exports = {
         ,"dougs_vow": "*"
         ,"follow": "*"
         ,"vouchdb": "*"
+        ,"logthis": "*"
         // ,"multicouch": "*"
-	// "nodemailer": "*",
+	,"nodemailer": "*"
 	// "dbox": "*",
         // "nodemailer": "0.5.x",
         // "dbox": "0.6.x",
