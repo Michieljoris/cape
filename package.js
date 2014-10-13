@@ -106,11 +106,13 @@ module.exports = {
         // "html-builder": "git://github.com/michieljoris/html-builder.git",
         "fs-extra": "0.8.x"
         ,"dougs_vow": "*"
-        ,"follow": "*"
         ,"vouchdb": "*"
         ,"logthis": "*"
         // ,"multicouch": "*"
 	,"nodemailer": "*"
+        ,"follow": "*"
+        ,"extend": "*",
+        "zxcvbn": "git://github.com/michieljoris/node-zxcvbn.git#master"
 	// "dbox": "*",
         // "nodemailer": "0.5.x",
         // "dbox": "0.6.x",

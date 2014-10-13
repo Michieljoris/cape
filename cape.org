@@ -5,7 +5,19 @@ type: signup|forgotpwd|confirm
 
 
 * TODO
-** lock down temp db
+** README.md  for authpages
+** unique email/username when signing up!!! 
+** lock down npm dependencies of 3rd party libs!!
+** don't store user pwd in clear text in temp!!!
+** add to and from fields to msgs  
+** formalize error msgs!!! 
+** enable https for couch
+** store mandril email password in ENV 
+** lock down public from writing, is read only   
+** set filter in public for callback  
+** set view to list names in _users
+** make reception unreadable by adding name or role
+** lock down temp db from writing/reading 
 ** how to deal with backlog in mailboxes? 
 ** put a validate_doc_update on the mailboxes!!  
 ** enable cors for couchdb when initing
@@ -192,7 +204,7 @@ function, clear global structure/architecture
     
     
 * doing
-make sample signup/confirm/forgotpwd/resetpwd/login pages
+make sample signup/confirm/forgotpwd/login pages
 - send msg to reception, so needs vouchdb
 - worker needs to be able to send emails 
   

@@ -16,10 +16,15 @@ var postoffice = require('./postoffice');
 
 var mailbox = require('./mailbox');
 
+
+
+
+
 //Make sure there is a couchdb instance and that it is not in party mode, if so
 //set admin to credentials that have been passed in.
 function initCouch(couchdb) {
     vouchdb.connect('http://' + couchdb.url);
+    
     var vow = VOW.make();
     vouchdb.info().when(
         function(data) {
@@ -52,6 +57,12 @@ function initCouch(couchdb) {
     return vow.promise;
 }
 
+// function test() {
+//     vouchdb.docSave({ a: 'bla' }, 'public' ).when(
+//         function(data) { log(data); }
+//         ,function(err) { log(err); }
+//     );
+// }
 
 
 //Main file that starts the node cape process.

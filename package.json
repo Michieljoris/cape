@@ -26,10 +26,12 @@
   "dependencies": {
     "fs-extra": "0.8.x",
     "dougs_vow": "*",
-    "follow": "*",
     "vouchdb": "*",
     "logthis": "*",
-    "nodemailer": "*"
+    "nodemailer": "*",
+    "follow": "*",
+    "extend": "*",
+    "zxcvbn": "git://github.com/michieljoris/node-zxcvbn.git#master"
   },
   "devDependencies": {
     "docco": "*"
@@ -38,5 +40,5 @@
   "scripts": {
     "docs": "node node_modules/.bin/docco backend/backend-cape.js"
   },
-  "version": "0.1.9"
+  "version": "0.1.11"
 }
