@@ -1,0 +1,199 @@
+#+TITLE: Cape
+
+*Work in progress..*
+
+The idea is to implement a system to build front end apps without a real
+backend other than a database. Apps are supposed to communicate directly and
+only with the database. Any work needing to be done on the server is done by
+cape which is monitoring the various CouchDB databases. To enable this system
+for anonymous users =cape= needs to jump through some hoops, but once a user is
+logged in secure messages can easily be sent. The big challenge for =cape= is
+going to be implementing and ensuring sufficient permissions, roles and access
+permissions for the CouchDB users since CouchDB has only per database read
+permissions, so the only way to prevent access is to clone data in separate
+databases. Unless the rcouch merge happens. Other goodies on the way are the the
+BigCouch merges.
+
+* Signing up new users and resetting password
+
+
+The idea is that a client doesn't communicates with any server but instead sends
+messages to workers on the server by saving docs into a couchdb database. These
+messages get picked up by the workers (=cape=) running on the server and if
+needed the appropriate actions taken. Any feedback can get read by the client
+again by listening to changes to another database, a sort of public announcement
+message bus.
+
+The challenge is to make this secure despite the limitations set. A few
+tradeoffs and protections need to be made to achieve this. One drawback is that
+at least one database (=reception=) is freely writable and at least one database
+(=public=) is freely readable, so flooding the first or saturating the
+connection limits of the second are obvious attack vectors. Traditional servers
+suffer from the same kind of vulnerabilities and secondary levels of protection
+(rate limiting proxy server perhaps) might be needed for this setup as well, as
+well as configuring CouchDB properly and having =cape= do regular maintenance of
+CouchDB.
+
+What follows is a description of the various databases involved in the system.
+
+** Databases
+*** reception
+   
+  This database is publicly writable. Through the use of validate_doc_update one
+  can ensure only certain types of documents get written. For instance attachment
+  can be blocked, or overly big field values etc. Any message written get picked
+  up =cape= (through the changes api) and immediately deleted from the
+  =reception= database. This database is supposed to be write-only. At the moment
+  this is not possible using CouchDB only (version 1.6), however a simple proxy
+  server in front of the public face of CouchDB can fix this by only allowing
+  POST and PUT requests to this database. A fork of CouchDB called [[https://github.com/rcouch/rcouch/wiki][rcouch]] does
+  have write-only databases and read validation support. It's supposed to [[https://blogs.apache.org/couchdb/entry/merging_rcouch][merge]]
+  with CouchDB 'soon'.
+
+*** public
+
+  This is not publicly writable, however anybody can read from it. It is used to
+  transmit little messages of success or error to various requests made through
+  =reception=. 
+  
+  When messages to =reception= include a 'callback' id, the client sending the
+  message can receive the feedback from =cape= through the =public= database by
+  listening to changes in this database, but filtered by this callback id. This
+  filtering happens on the server, so the only time the client is contacted is
+  when a relevant message gets written to =public= by =cape=. Of course a client
+  can listen to all changes, and depending on how many people are trying to sign
+  up or are going through 'forgot pwd' procedures, quite a few messages can get
+  read. The messages (docs) themselves contain nothing but a callback id and a
+  field with a string containing information such as 'password updated', or
+  'email missing' or 'email sent' or 'too short password' etc. This is a security
+  leak, but very big.
+  
+*** temp
+   
+   Internal database used by =cape= to remember messages posted to =reception=
+   so the proper follow up action can be taken in response to further messages
+   from the same client.
+   
+** Procedures
+*** Sign up 
+   
+  To sign up to a new account a client sends a message of the following format
+  to =reception=:
+  
+#+begin_source javascript
+    { msg: 'signup',
+      callback: '"34534klhk4jkl3425kjl432532',
+      username: 'mickie',
+      password: 'somepassword',
+      email: 'mickie@host.com',
+     }
+#+end_source
+
+  =Cape= is listening to any changes in the =reception= database and acts on
+  them as soon as they are received. If the message is validated (proper email,
+  no empty fields, no pre-existing account etc) the password is hashed using
+  pbkdf2 and the message stored in =temp= minus the callback field but with a
+  timestamp field. A confirmation email is sent to mickie@host.com with the following
+  link in the content: ~http://app.com/confirm.html?uuid=sdfas70sd9870sdaf8af0~
+  The uuid is the _id of the stored message in =temp=.
+  
+  Also a message is stored in =public= looking like this:
+#+begin_source javascript
+    { callback: '"34534klhk4jkl3425kjl432532',
+      msg: 'email sent'
+     }
+#+end_source
+  The client can listen pick up this message and know that the signup was
+  successful to this point. 
+
+ When Mickie receives this message and click on it the confirm.html page will
+ read the uuid from the url and sent the following message:
+ 
+#+begin_source javascript
+    { msg: 'confirm',
+      callback: 'asdfas89adsf89897' //different callback
+      uuid: "sdfas70sd9870sdaf8af0" //the uuid from the url
+     }
+#+end_source
+ 
+ =Cape= reads this message, looks for the doc in =temp= with the uuid as _id. If
+ this doc is found it knows that the email is valid and the user is added to
+ the =_user= database, using the info from the retrieved doc from =temp=. 
+ 
+ If not just anybody can sign up, perhaps a (frequently changing) password can be
+ used and added to the signup to validate requests for signup. If the passwords
+ don't match the requests are simply discarded.
+ 
+*** Forgot password 
+  
+ This works similar to sign up. A client can send the following message:
+ 
+#+begin_source javascript
+    { msg: 'forgotpwd',
+      callback: '"34asdfa8977979dsf',
+      usernameOrEmail: 'mickie' //or mickie@host.com
+     }
+#+end_source
+ 
+ =Cape= looks for this user or email in the =_user= database and if found sends
+ a forgot pwd email to the user. It also again sends a 'email sent' message to
+ =public=. Only current users get a reset password email. The message is stored
+ in =temp= again with the _id of the user.
+
+ The link in the email received by the user opens a page at
+ ~http://app.com/resetpwd.html?uuid=u345hhj43hj5k324~ The uuid is the _id of the
+ stored message in =temp=.The resetpwd.html page simply displays a regular
+ password form. When submitted the page sends a message to reception:
+#+begin_source javascript
+    { msg: 'resetpwd',
+      callback: 'asdfaf88980dgsdg',
+      password: 'newpassword'
+      uuid: 'u345hhj43hj5k324' //uuid from link in email
+     }
+#+end_source
+
+When =cape= finds this uuid as a _id in =temp= it knows that the request to
+ reset the password is from a valid current user. The _id of the user is stored
+ with this doc in =temp=.  It then simply updates the user's password and sends
+ a message back using the callback in the resetpwd message.
+ 
+** Maintenance and security 
+
+   To prevent the public database from containing too many docs a regular
+   cleanup can be implemented. For instance if a client doesn't receive the
+   message within a couple of minutes it can be assumed it's network connection
+   is down or too slow. The client can apply the same timeout and encourage the
+   user to resubmit perhaps or automatically resubmit. 
+
+   Since all docs stored in =temp= are timestamped they can be garbage collected
+   at regular intervals and cane immediately deleted when a follow up request
+   for the stored doc comes after a certain timeout. This invalidates any
+   confirmation or reset password links clicked on after a certain time.
+   
+   SSL should be enabled for any connection to CouchDB since passwords are sent
+   in cleartext over the net.
+   
+   As all other email verification methods the system is vulnerable to mtm
+   attacks that read emails in transit from server to client. Any tokens sent
+   are once only and expire quickly. This minimizes this threat somewhat, but I
+   still wonder why this is not a bigger security threat than it seems to
+   be. Google and Twitter and other big players very readily sent email
+   verification emails to registered or new users.
+   
+** Passwordless logins 
+    
+  The scheme can also be used to enable passwordless logins. A user submits their
+  username or email to the app. When =cape= receives this message it sends an
+  email to the user with a link containing an expiring one-time uuid. When the
+  user clicks on this and opens the app's login page the app can send a
+  confirmation message to =cape=. But with this confirmation message a (long and
+  random) password can be included. =Cape= can reset the user's password to this
+  password and send a 'login ready' message back. The app can on receiving this
+  message immediately login the user with this password. Once the user is logged
+  in the password can be immediately changed again, either by the user, or
+  automatically by =cape=. Also shorter, short-term, once-only password codes can
+  be generated this way to enable login on other (mobile) devices.
+  
+
+
+
