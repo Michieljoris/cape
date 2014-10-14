@@ -6,8 +6,12 @@ var VOW = require('dougs_vow');
 var follow = require("follow");
 var vouchdb = require("vouchdb");
 
+
+//Wait for changes in 'db' and call 'cb' when they happen. If the database 'db'
+//gets deleted automatically recreat it.
 function wait(couchdb, db, cb) {
     
+    //default callback for testing purposes
     cb = cb || function (change) {
         log(change);
         log(db + ": Change " + change.seq + " has " +
@@ -20,9 +24,10 @@ function wait(couchdb, db, cb) {
         include_docs: true,
         since: "now"
     };
-    log(config);
+    log('Listening to changes:\n', config);
     var changes = follow(config, function(err, change) {
         if (!err) {
+            //ignore changes because of deletion of doc
             if (!change.doc._deleted) cb(change);   
         }
         else if (err.deleted) vouchdb.dbCreate(db).when(
@@ -31,7 +36,7 @@ function wait(couchdb, db, cb) {
                 wait(couchdb, db, cb);
             },
             function (err) {
-                log('Error: ', err);
+                log._e('Error: ', err);
             });
         else log._e(err);
     });
@@ -43,7 +48,7 @@ function connect(couchdb, db, cb) {
     //create db if it doesn't exist
     vouchdb.dbInfo(db).when(
         function(data) {
-            log('Data', data);
+            log('Database ' + cb + ' info:\n', data);
             wait(couchdb, db, cb);
             vow.keep();
         }
