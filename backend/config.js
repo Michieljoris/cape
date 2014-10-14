@@ -70,24 +70,24 @@ return false;  }"
 	name: 'temp',
         //only admin can read and write this database
         names: ['admin'], roles: [],
-	_design:  {
-	    name: 'cape'
-	    // ,validate_doc_update: validate_doc_update,
-	    // lib: {
-	    //     validator: validator
-	    // }
-	}
+	// _design:  {
+	//     name: 'cape'
+	//     ,validate_doc_update: validate_doc_update,
+	//     lib: {
+	//         validator: validator
+	//     }
+	// }
     },
     postoffice: {
 	name: 'postoffice',
         names: ['admin'], roles: [],
-	_design:  {
-	    name: 'cape'
-	    // ,validate_doc_update: validate_doc_update,
-	    // lib: {
-	    //     validator: validator
-	    // }
-	}
+	// _design:  {
+	//     name: 'cape'
+	//     ,validate_doc_update: validate_doc_update,
+	//     lib: {
+	//         validator: validator
+	//     }
+	// }
     },
     reception: {
 	name: 'reception',

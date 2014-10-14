@@ -16,6 +16,21 @@ var postoffice = require('./postoffice');
 
 var mailbox = require('./mailbox');
 
+function initOneDatabase(db) {
+    var vow = VOW.make();
+    
+    
+    return vow.promise;
+}
+
+function initDatabases(couchdb) {
+    var vows = [];
+    Object.keys(couchdb).forEach(function(db) {
+        vows.push(initOneDatabase(db));
+    });
+}
+
+
 //Make sure there is a couchdb instance and that it is not in party mode, if so
 //set admin to credentials that have been passed in.
 function initCouch(couchdb) {
@@ -71,6 +86,11 @@ function start(connect) {
         .when(
             function(data) {
                 log('CouchDB is ok');
+                return initDatabases(config.couchdb);
+            })
+        .when(
+            function(data) {
+                log('Installed design docs');
                 return mailbox.connect(connect.couchdb, config.couchdb.reception.name,
                                        reception);
             })
