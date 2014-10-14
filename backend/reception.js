@@ -114,15 +114,15 @@ function validate(creds) {
 }
 
 //Save a doc to the public db for clients to read
-function postPublicMsg(callback, msg) {
-    if (callback) {
-        log('Posting msg in public db with callback ' + callback);
+function postPublicMsg(from, msg) {
+    if (from) {
+        log('Posting msg in public db with from ' + from);
         ensureExistsDb(config.couchdb.public.name)
             .when(
                 function() {
                     var doc = {
                         timestamp: "" + new Date().getTime(),
-                        callback: callback || "",
+                        from: from || "",
                         msg: msg};
                     return vouchdb.docSave(doc,config.couchdb.public.name);
                 }
@@ -189,7 +189,7 @@ function checkUserId(id) {
 
 //Validate creds passed in, timestamps it, stores it in temp db and sends a
 //confirmation email, with the uuid of the doc in temp. If error occurs and the creds contained a key id, leave msg in public for the client to retrieve.
-//creds = { msg: 'signup', username: 'mickie', pwd: 'somepwd', email:'a@b.com', callback: 'sdfasdf78979' }
+//creds = { msg: 'signup', username: 'mickie', pwd: 'somepwd', email:'a@b.com', from: 'sdfasdf78979' }
 function signup(creds) {
     log('creds:', creds);
     validate(creds)
@@ -220,11 +220,11 @@ function signup(creds) {
             })
         .when(
             function(mailOptions) {
-                postPublicMsg(creds.callback, 'OK: email sent to ' + mailOptions.to);
+                postPublicMsg(creds.from, 'OK: email sent to ' + mailOptions.to);
             }
             ,function(err) {
                 log('Error: ', err);
-                postPublicMsg(creds.callback, 'Error: ' + err);
+                postPublicMsg(creds.from, 'Error: ' + err);
             }
         );
 }
@@ -233,7 +233,7 @@ function signup(creds) {
 //Deal with msg from client with a uuid from a signup. Look for the doc with the
 //uuid in the temp db, retrieve it, and use the userDoc attached to this doc to
 //add a user
-//msg= { msg: 'confirm', uuid: '8d7d989d7f89adsf', callback: '87f89ads7f9adsf' }
+//msg= { msg: 'confirm', uuid: '8d7d989d7f89adsf', from: '87f89ads7f9adsf' }
 function confirm(msg) {
     log('confirm!!!', msg.uuid);
     vouchdb.docGet(msg.uuid, config.couchdb.temp.name)
@@ -245,11 +245,11 @@ function confirm(msg) {
         .when(
             function(data) {
                 log('Added user ' , data);
-                postPublicMsg(msg.callback, 'Added user ');
+                postPublicMsg(msg.from, 'Added user ');
             }
             ,function(err) {
                 log._e('failed to add user: ', err);
-                postPublicMsg(msg.callback, err);
+                postPublicMsg(msg.from, err);
             }
         );
 }
@@ -258,7 +258,7 @@ function confirm(msg) {
 //stick the found id in the temp db and send user an email with a link with a
 //query of resetpwd=msg._id so we can find it again when the user clicks on the
 //link in the email
-//msg= { msg: 'forgotpwd', usernameOrPassword: 'mickie', callback: '893453hjhjkh' }
+//msg= { msg: 'forgotpwd', usernameOrPassword: 'mickie', from: '893453hjhjkh' }
 function forgotpwd(msg) {
     log('forgotpwd', msg);
     var id = msg.usernameOrPassword;
@@ -291,11 +291,11 @@ function forgotpwd(msg) {
             })
         .when(
             function(mailOptions) {
-                postPublicMsg(msg.callback, 'OK: email sent to ' + mailOptions.to);
+                postPublicMsg(msg.from, 'OK: email sent to ' + mailOptions.to);
             }
             ,function(err) {
                 log('Error: ', err);
-                postPublicMsg(msg.callback, 'Error: ' + err);
+                postPublicMsg(msg.from, 'Error: ' + err);
             }
         );
 }
@@ -303,7 +303,7 @@ function forgotpwd(msg) {
 //This is the follow up from forgotpwd. This is sent from the page that gets
 //loaded after the user clicks on the link in the confirmation email received
 //after submitting the forgotpwd form. Now we actually receive a new password.
-//msg = { uuid: 'asdfa8989afdasf', pwd:'somepwd', callback:'887897daf7dagd9f9' }
+//msg = { uuid: 'asdfa8989afdasf', pwd:'somepwd', from:'887897daf7dagd9f9' }
 function resetpwd(msg) {
     log(msg);
     var tempDoc;
@@ -320,11 +320,11 @@ function resetpwd(msg) {
         .when(
             function(data) {
                 log('Updated password' , data);
-                postPublicMsg(msg.callback, 'Updated password for ' + tempDoc.name);
+                postPublicMsg(msg.from, 'Updated password for ' + tempDoc.name);
             }
             ,function(err) {
                 log._e('failed to update password for  user: ' + tempDoc.name, err);
-                postPublicMsg(msg.callback, err);
+                postPublicMsg(msg.from, err);
             }
         );
 }

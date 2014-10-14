@@ -19,10 +19,10 @@ function (newDoc, oldDoc, userCtx, secObj){
     if (is_admin()) return;
     
     var allowedMsgs =
-        { 'signup': ['username', 'pwd', 'email', 'callback' ],
-          'confirm': ['uuid', 'callback'],
-          'forgotpwd': ['usernameOrEmail', 'callback'],
-          'resetpwd': ['uuid', 'pwd', 'callback']};
+        { 'signup': ['username', 'pwd', 'email', 'from' ],
+          'confirm': ['uuid', 'from'],
+          'forgotpwd': ['usernameOrEmail', 'from'],
+          'resetpwd': ['uuid', 'pwd', 'from']};
     
     if (oldDoc) reportError('forbidden', 'You are not allowed to update docs');
     

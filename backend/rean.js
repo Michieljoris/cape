@@ -18,6 +18,8 @@ var mailbox = require('./mailbox');
 
 function initOneDatabase(db) {
     var vow = VOW.make();
+    //check whether it exists, create if necessary, then check for _design doc,
+    //create if necessary, set the doc to whats in config (db)
     
     
     return vow.promise;

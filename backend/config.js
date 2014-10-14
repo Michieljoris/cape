@@ -53,10 +53,10 @@ var config =  {
 	_design:  {
 	    name: 'cape',
 	    filters: {
-		callback: {
-		    name: 'callback',
+		from: {
+		    name: 'from',
 		    fn: "function(doc, req) { \
-if (doc && req.query.callback === doc.callback) return true;\
+if (doc && req.query.from === doc.from) return true;\
 return false;  }"
 		}
 	    }
