@@ -5,31 +5,42 @@ type: signup|forgotpwd|confirm
 
 
 * TODO
-** README.md  for authpages
-** unique email/username when signing up!!! 
+** if cb in mailbox is called with error auto fix it!!!
+** how to deal with backlog in mailboxes? 
+** make reception unreadable by adding proxy
+** test starting from scratch, empty database 
+** passwordless login  
+  this just needs adaption on the client side 
+** all jobs running permanently should be agents!!
+And somebody should be monitoring the agents and restart them !!! 
+** does cape needs less than full _admin rights?  
+  But nobody else can create databases though.  
+** implement wipe all designdocs in rean.js  
+** DONE vouch_couch creates a session but
+   sessions expire, admin:irma needs to be baked into all requests
+** DONE enable cors for couchdb when initing
+** DONE unique email/username when signing up!!! 
 ** lock down npm dependencies of 3rd party libs!!
-** don't store user pwd in clear text in temp!!!
 ** add to and from fields to msgs  
 ** formalize error msgs!!! 
 ** enable https for couch
 ** store mandril email password in ENV 
-** lock down public from writing, is read only   
-** set filter in public for callback  
-** set view to list names in _users
-** make reception unreadable by adding name or role
-** lock down temp db from writing/reading 
-** how to deal with backlog in mailboxes? 
-** put a validate_doc_update on the mailboxes!!  
-** enable cors for couchdb when initing
+** DONE lock down public from writing, is read only   
+** DONE set filter in public for callback  
+** DONE set view to list names in _users
+** DONE lock down temp db from writing/reading 
+** DONE put a validate_doc_update on the mailboxes!!  
 otherwise browser can't access it!!!
-** if cb in mailbox is called with error auto fix it!!!
-** mailboxes need to be locked down:
+** DONE mailboxes need to be locked down:
 set security object
 add appropriate doc_validate_update
 ** restart listeners to mailboxes when stopped
 ** setup logrotate for couchdb!! 
    http://wiki.apache.org/couchdb/Installing_on_Ubuntu
    http://java.dzone.com/articles/how-install-couch-db-15-ubuntu
+** couchdb is timing out the reps trying!!!
+   
+   
 ** how to setup frontend cape.js?
 With modules? So then we need bb-server!
 But source needs to be in cape
@@ -45,11 +56,6 @@ or factor out jquery on node
 or replace with request:
 https://github.com/iriscouch/browser-request/
 
-   
-** couchdb needs to enable cors?
-   
-
-** couchdb is timing out the login and also the reps trying!!!
    
 * research
 ** other logins than couchdb native
@@ -204,14 +210,11 @@ function, clear global structure/architecture
     
     
 * doing
-make sample signup/confirm/forgotpwd/login pages
-- send msg to reception, so needs vouchdb
-- worker needs to be able to send emails 
+** clean up databases reception, temp and public
+reception: should stay clean, but check periodically and if there's more than n
+docs, shut it down for writing by adding a role or name, wipe it, and make it
+accessible again
+- temp: all docs are time stamped, periodically clean out
+- public
+  timestamp them and periodically clean out
   
-signup:
-send signup msg to reception, with username, email and password 
-
-confirm:
-read uuid from url and send confirm msg to reception with uuid
-
-

@@ -2,6 +2,7 @@ var Path = require('path') ;
 var log = require('logthis').logger._create(Path.basename(__filename));
 var util = require('util');
 
+var env = require('./env');
 var config = require('./config');
 var vouchdb = require('vouchdb');
 var VOW = require('dougs_vow');
@@ -9,15 +10,17 @@ var nodemailer = require("nodemailer");
 var extend = require('extend');
 var PBKDF2 = require('./pbkdf2');
 
+var databases = config.couchdb.databases;
+
 //This module deals with all the messages arriving in the receptiion database.
+
 
 var smtpTransport = nodemailer.createTransport(
     {
         service: "Mandrill",
         auth: {
-            user: "mail@axion5.net",
-            //TODO get password from environment!!
-            pass: "U2eJfnNEtFRYCX2zFK1ZHw"
+            user: env.mandrill.user,
+            pass: env.mandrill.pwd
         }
     });
 
@@ -52,31 +55,6 @@ function generateSalt(len) {
     return salt;
 }
 
-//Ensure passed in db exists and if not creates it.
-function ensureExistsDb(db) {
-    var vow = VOW.make();
-    vouchdb.dbInfo(db)
-        .when(
-            function(data) {
-                vow.keep();
-            }
-            ,function(err) {
-                if (err.reason === 'no_db_file') {
-                    vouchdb.dbCreate(db).when(
-                        function(data) {
-                            vow.keep();
-                        },
-                        function(err) {
-                            vow.breek(err);
-                        }
-                    );
-                }
-                else vow.breek(err);
-            }
-        );
-    return vow.promise;
-}
-
 //This should validate most possible email addresses while still not validating
 //all nonsense email addresses.
 function validateEmail(email) { 
@@ -93,20 +71,29 @@ function validate(creds) {
         vow.breek("Passwords should be 8 or more characters");
     else if (!creds.username) vow.breek("Username is empty");
     else {
-        vouchdb.view(config.couchdb._users._design.name,
-                     config.couchdb._users._design.view.list.name, {},
-                     config.couchdb._users.name)
+        vouchdb.userGet(creds.username)
             .when(
-                function(data) {
-                    if (data.rows.some(function(row) {
-                        return row.key === creds.username;
-                    })) vow.breek('Username ' + creds.username + ' is already in use');
-                    else vow.keep();
+                function() {
+                    vow.breek('Username ' + creds.username + ' is already in use');
                 },
-                function(err) {
-                    vow.breek('Unable to check username list', err);
-                    log(err);
+                function() {
+                    vouchdb.view(databases._users._design.name,
+                                 databases._users._design.views.list.name,
+                                 { key: creds.email },
+                                 databases._users.name)
+                        .when(
+                            function(data) {
+                                if (data.rows.length)
+                                    vow.breek('Email ' + creds.email + ' is already in use');
+                                else vow.keep();
+                            },
+                            function(err) {
+                                vow.breek('Unable to check username list', err);
+                                log(err);
+                            }
+                        );
                 }
+                
             );
                 
     }
@@ -117,14 +104,14 @@ function validate(creds) {
 function postPublicMsg(from, msg) {
     if (from) {
         log('Posting msg in public db with from ' + from);
-        ensureExistsDb(config.couchdb.public.name)
+        vouchdb.dbEnsureExists(databases.public.name)
             .when(
                 function() {
                     var doc = {
-                        timestamp: "" + new Date().getTime(),
+                        timestamp: new Date().getTime(),
                         from: from || "",
                         msg: msg};
-                    return vouchdb.docSave(doc,config.couchdb.public.name);
+                    return vouchdb.docSave(doc,databases.public.name);
                 }
             )
             .when(
@@ -159,29 +146,35 @@ function createUserDoc(username, pwd, obj) {
 }
 
 //Check whether id exists as email or user name in the _users database, if so
-//return it returns a userDoc with at least a name and an email
+//return it. Returns a userDoc with at least a name and an email
 function checkUserId(id) {
     var vow = VOW.make();
     if (!id || id.length === 0) {
         vow.breek('Empty username/email');
     }
-    else vouchdb.view(config.couchdb._users._design.name,
-                      config.couchdb._users._design.view.list.name, {},
-                      config.couchdb._users.name)
-        .when(function(data) {
-            var foundId;
-            if (data.rows.some(function(row) {
-                foundId = row.value;
-                return row.value.email &&
-                    (row.value.name === id || row.value.email === id);
-            })) vow.keep(foundId);
-            else vow.breek('Couldn\'t find username/email or user has no email');
-        },
-              function(err) {
-                  vow.breek('Unable to check user list', err);
-                  log(err);
-              }
-             );
+    else vouchdb.userGet(id)
+        .when(
+            function(data) {
+                vow.keep(data);
+            },
+            function() {
+                vouchdb.view(databases._users._design.name,
+                             databases._users._design.views.list.name,
+                             { key: id },
+                             databases._users.name)
+                    .when(
+                        function(data) {
+                            if (data.rows.length)
+                                vow.keep(data.rows[0].value);
+                        },
+                        function(err) {
+                            vow.breek(id + ' not found' + err);
+                            log(err);
+                        }
+                    );
+            }
+                
+        );
     return vow.promise;
 }
 
@@ -195,16 +188,16 @@ function signup(creds) {
     validate(creds)
         .when(
             function() {
-                return ensureExistsDb(config.couchdb.temp.name);
+                return vouchdb.dbEnsureExists(databases.temp.name);
             })
         .when(
             function() {
                 var tempDoc = {
                     userDoc: createUserDoc(creds.username, creds.pwd,
                                            { email: creds.email }),
-                    timestamp: "" + new Date().getTime()
+                    timestamp: new Date().getTime()
                 };
-                return vouchdb.docSave(tempDoc, config.couchdb.temp.name);
+                return vouchdb.docSave(tempDoc, databases.temp.name);
             })
         .when(
             function(tempDoc) {
@@ -229,17 +222,32 @@ function signup(creds) {
         );
 }
 
-
+var invalidUuids = [];
 //Deal with msg from client with a uuid from a signup. Look for the doc with the
 //uuid in the temp db, retrieve it, and use the userDoc attached to this doc to
 //add a user
 //msg= { msg: 'confirm', uuid: '8d7d989d7f89adsf', from: '87f89ads7f9adsf' }
 function confirm(msg) {
     log('confirm!!!', msg.uuid);
-    vouchdb.docGet(msg.uuid, config.couchdb.temp.name)
+    var tempDoc;
+    vouchdb.docGet(msg.uuid, databases.temp.name)
         .when(
-            function(tempDoc) {
+            function(someTempDoc) {
+                tempDoc = someTempDoc;
                 log('found uuid in temp database', tempDoc);
+                if (invalidUuids[msg.uuid]) {
+                    //to avoid race conditions:
+                    invalidUuids[msg.uuid] = true;
+                    if (tempDoc.timestamp >
+                        new Date().getTime() - databases.temp.ttl * 1000)
+                        return vouchdb.docRemove(tempDoc, databases.temp.name);
+                }
+                //maintenance will clean up the token from temp.
+                return VOW.broken('Signup token expired or already used');
+            })
+        .when(
+            function(data) {
+                delete invalidUuids[msg.uuid]; //since it is gone from the temp db now
                 return vouchdb.userAdd(tempDoc.userDoc, null);
             })
         .when(
@@ -259,7 +267,7 @@ function confirm(msg) {
 //query of resetpwd=msg._id so we can find it again when the user clicks on the
 //link in the email
 //msg= { msg: 'forgotpwd', usernameOrPassword: 'mickie', from: '893453hjhjkh' }
-function forgotpwd(msg) {
+function forgotpwd(msg, subject, email) {
     log('forgotpwd', msg);
     var id = msg.usernameOrPassword;
     var userDoc;
@@ -267,14 +275,14 @@ function forgotpwd(msg) {
         .when(
             function(someUserDoc) {
                 userDoc = someUserDoc;
-                return ensureExistsDb(config.couchdb.temp.name);
+                return vouchdb.dbEnsureExists(databases.temp.name);
             })
         .when(
             function() {
                 return vouchdb.docSave({
                     name: userDoc.name,
-                    timestamp: "" + new Date().getTime()
-                }, config.couchdb.temp.name);
+                    timestamp: new Date().getTime()
+                }, databases.temp.name);
             })
         .when(
             function(doc) {
@@ -283,9 +291,9 @@ function forgotpwd(msg) {
                 var mailOptions = {
                     from: "noreply@axion5.net", // sender address
                     to: userDoc.email, // list of receivers
-                    subject: config.email.resetPwdSubject, // Subject line
+                    subject: subject, // Subject line
                     // text: data.message // plaintext body
-                    html: config.email.resetPwdEmail(doc.id)// html body
+                    html: email(doc.id)// html body
                 };
                 return sendMail(mailOptions);
             })
@@ -309,12 +317,25 @@ function resetpwd(msg) {
     var tempDoc;
     //find the proper doc in temp using the received uuid. This doc has the
     //username to find the proper doc in _users
-    vouchdb.docGet(msg.uuid, config.couchdb.temp.name)
+    vouchdb.docGet(msg.uuid, databases.temp.name)
         .when(
             function(someTempDoc) {
                 tempDoc = someTempDoc;
                 log('found uuid in temp database', tempDoc);
-                //update the password
+                if (invalidUuids[msg.uuid]) {
+                    //to avoid race conditions:
+                    invalidUuids[msg.uuid] = true;
+                    if (tempDoc.timestamp >
+                        new Date().getTime() - databases.temp.ttl * 1000)
+                        return vouchdb.docRemove(tempDoc, databases.temp.name);
+                }
+                
+                //maintenance will clean up the token from temp.
+                return VOW.broken('Resetpwd token expired or already used');
+            })
+        .when(
+            function(data) {
+                delete invalidUuids[msg.uuid]; //since it is gone from the temp db now
                 return vouchdb.userUpdate(tempDoc.name, { password: msg.pwd });
             })
         .when(
@@ -333,16 +354,22 @@ function resetpwd(msg) {
 function handleMsg(msg) {
     switch (msg.msg) {
       case config.msg.SIGNUP: signup(msg); break;
-      case config.msg.FORGOTPWD: forgotpwd(msg); break;
+      case config.msg.FORGOTPWD: forgotpwd(msg,
+                                           config.email.resetPwdSubject,
+                                          config.email.resetPwdEmail); break;
       case config.msg.CONFIRM: confirm(msg); break;
       case config.msg.RESETPWD: resetpwd(msg); break;
+      case config.msg.NOPWDLOGIN: forgotpwd(msg,
+                                            config.email.nopwdLoginSubject,
+                                            config.email.nopwdLoginEmail
+                                           ); break;
     default:
     }
     
     //ignore changes to design documents
     if (msg._id.indexOf('_design') !== 0) {
         log('Msg is being handled, deleting msg from reception', msg);
-        vouchdb.docRemove(msg, config.couchdb.reception.name).when(
+        vouchdb.docRemove(msg, databases.reception.name).when(
         function(data) {
             log('Msg removed from reception', data);
         }

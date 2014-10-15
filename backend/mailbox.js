@@ -9,7 +9,7 @@ var vouchdb = require("vouchdb");
 
 //Wait for changes in 'db' and call 'cb' when they happen. If the database 'db'
 //gets deleted automatically recreat it.
-function wait(couchdb, db, cb) {
+function wait(instance, db, cb) {
     
     //default callback for testing purposes
     cb = cb || function (change) {
@@ -19,8 +19,8 @@ function wait(couchdb, db, cb) {
     };
 
     var config = {
-        db: 'http://' + couchdb.admin + ':' + couchdb.pwd + '@'  +
-            couchdb.url + '/' + db,
+        db: 'http://' + instance.admin + ':' + instance.pwd + '@'  +
+            instance.url + '/' + db,
         include_docs: true,
         since: "now"
     };
@@ -33,7 +33,7 @@ function wait(couchdb, db, cb) {
         else if (err.deleted) vouchdb.dbCreate(db).when(
             function(data) {
                 log('Database ' + db + ' recreated');
-                wait(couchdb, db, cb);
+                wait(instance, db, cb);
             },
             function (err) {
                 log._e('Error: ', err);
@@ -43,20 +43,20 @@ function wait(couchdb, db, cb) {
 }
 
 //Make sure db database exists and wait for changes
-function connect(couchdb, db, cb) {
+function connect(instance, db, cb) {
     var vow = VOW.make();
     //create db if it doesn't exist
     vouchdb.dbInfo(db).when(
         function(data) {
-            log('Database ' + cb + ' info:\n', data);
-            wait(couchdb, db, cb);
+            log('Database '+ ' info:\n', data);
+            wait(instance, db, cb);
             vow.keep();
         }
         ,function(err) {
             vouchdb.dbCreate(db).when(
                 function(data) {
                     log('Database ' + db + ' created');
-                    wait(couchdb, db, cb);
+                    wait(instance, db, cb);
                     vow.keep();
                 },
                 vow.breek
