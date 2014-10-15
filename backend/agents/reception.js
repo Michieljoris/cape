@@ -262,7 +262,7 @@ function confirm(msg) {
         .when(
             function(data) {
                 log('Added user ' , data);
-                postPublicMsg(msg.from, 'OK: Added user ');
+                postPublicMsg(msg.from, 'OK');
             }
             ,function(err) {
                 log._e('failed to add user: ', err);
@@ -308,11 +308,11 @@ function forgotpwd(msg, subject, email) {
             })
         .when(
             function(mailOptions) {
-                postPublicMsg(msg.from, 'OK: email sent');
+                postPublicMsg(msg.from, 'OK');
             }
             ,function(err) {
                 log('Error: ', err);
-                postPublicMsg(msg.from, 'ERROR:' + err);
+                postPublicMsg(msg.from, 'ERRR:' + err);
             }
         );
 }
