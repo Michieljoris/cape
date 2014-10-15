@@ -24,7 +24,7 @@ function wait(instance, db, cb) {
         include_docs: true,
         since: "now"
     };
-    log('Listening to changes:\n', config);
+    log('Listening to changes in ' + db + ':\n', config);
     var changes = follow(config, function(err, change) {
         if (!err) {
             //ignore changes because of deletion of doc
@@ -48,7 +48,7 @@ function connect(instance, db, cb) {
     //create db if it doesn't exist
     vouchdb.dbInfo(db).when(
         function(data) {
-            log('Database '+ ' info:\n', data);
+            log('Database '+ db + ' info:\n', data);
             wait(instance, db, cb);
             vow.keep();
         }

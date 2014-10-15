@@ -4,7 +4,9 @@ require('logthis').config({ _on: true,
                             'rean.js': 'debug',
                             'mailbox.js': 'debug',
                             'postoffice.js': 'debug',
-                            'reception.js': 'debug'
+                            'reception.js': 'debug',
+                            'monitor.js': 'debug',
+                            'purge.js': 'debug'
                           });
 var log = require('logthis').logger._create(Path.basename(__filename));
 
@@ -12,56 +14,8 @@ var env = require('./env');
 var config = require('./config');
 var VOW = require('dougs_vow');
 var vouchdb = require("vouchdb");
-var reception = require('./reception');
-var postoffice = require('./postoffice');
 
-var mailbox = require('./mailbox');
 
-//Periodically remove all docs with a timestamp less than new Date().getTime()
-//minus db.ttl. Docs should be at most for db.ttl * 2 seconds in the database
-//before being automatically removed.
-function removeExpired(db) {
-    if (!db.ttl) return;
-    setInterval(function() {
-        // var d = new Date();
-        // log('now', d.getTime(), d);
-        var endkey = (new Date().getTime() - db.ttl*1000);
-        // d.setTime(endkey);
-        // log('endkey', endkey, d);
-        vouchdb.view(db._design.name,
-                     db._design.views.expired.name,
-                     { endkey: endkey },
-                     // { },
-                     db.name)
-            .when(
-                function(data) {
-                    // log(data);
-                    var docs = data.rows.map(function(r) {
-                        return { _id: r.id, _rev: r.value.rev, timestamp: r.key };
-                    });
-                    // docs.forEach(function(row) {
-                    //     d.setTime(row.timestamp);
-                    //     console.log(row.id, row.timestamp, d);
-                    // });
-                    if (docs.length) {
-                        log('Removing ' + docs.length + ' expired docs from ' + db.name);
-                        return vouchdb.docBulkRemove(docs, db.name);   
-                    }
-                    else return VOW.kept();
-                })
-            .when(
-                function(data) {
-                    log('Finished purging ' + db.name);
-                } 
-            
-                ,function(err) {
-                    log._e('Error: couldn\'t remove docs from ' + db.name, err);
-                }
-            );
-        
-    }, db.ttl * 1000);
-    
-}
 
 function initOneDatabase(db, wipeDesignDocs) {
     //check whether it exists, create if necessary, then check for _design doc,
@@ -85,7 +39,6 @@ function initOneDatabase(db, wipeDesignDocs) {
             })
         .when(
             function(data) {
-                removeExpired(db);
                 return VOW.kept(data);
             }); 
 }
@@ -106,7 +59,6 @@ function initCouch(instance) {
         instance.url = instance.url.slice(7);
     };
     vouchdb.connect('http://' + instance.url);
-    // vouchdb.connect('http://' + instance.admin + ':' + instance.pwd + '@' + instance.url);
     
     var vow = VOW.make();
     vouchdb.info().when(
@@ -157,71 +109,6 @@ function configCouch(config) {
     return VOW.every(vows);
 }
 
-//This function monitors the various databases for exceeding values as passed in.
-// The passed in value should be an object of props such as this one:
-// somedb: {
-//     name: 'somedb-name',
-//     monitor: {
-//         interval: 10, //seconds
-//         warn: {
-//             doc_count: 2
-//         },
-//         error: {
-//             doc_count: 4
-//         }
-//     },
-
-// Values will be checked every 'interval' seconds. and a warning/error logged
-// when the value in the database's info exceeds the value as set. Errors go
-// before warnings. So for instance if the doc_count in somedb is 5 an error
-// will be logged, but not a warning. Only values listed here will be checked.
-function monitor(databases) {
-    function check(m, i, t) {
-        var result = [];
-        if (!m) return result;
-        Object.keys(m).forEach(
-            function(a) {
-                if (i[a] && m[a] < i[a]) {
-                    result.push({ type: t, prop: a, value: i[a], max: m[a]});
-                    delete i[a];
-                }
-            }
-        );
-        return result;
-    };
-    
-    function report(dbName, lines) {
-        var fn = { 'Warning': '_w', 'Error': '_e' };
-        lines.forEach(function(line) {
-            log[fn[line.type]](line.type + ' [' + dbName + ']:' + line.prop + ' = ' + line.value +
-                           ' max = ' + line.max);
-        });
-    }
-    
-    Object.keys(databases).forEach(
-        function(key) {
-            var db = databases[key];
-            if (db.monitor && db.monitor.interval &&
-               (db.monitor.warn || db.monitor.error)) {
-                setInterval(function() {
-                    vouchdb.dbInfo(db.name)
-                        .when(
-                            function(info) {
-                                var errors = check(db.monitor.error, info, 'Error');
-                                var warnings = check(db.monitor.warn, info, 'Warning');
-                                report(db.name, errors.concat(warnings));
-                            }
-                            ,function(err) {
-                                log.e('Database ' + db.name + ' is not accesible!!', err);;
-                            });
-                }, db.monitor.interval * 1000);
-                 
-            }
-            
-        }
-    );
-    return VOW.kept();
-}
 
 //Main function that starts the node cape process.
 
@@ -230,16 +117,20 @@ function monitor(databases) {
 //         admin: 'admin', pwd: 'pwd', url: 'localhost:5984'
 //     }
 //}
-function start(env) {
+function start(info) {
     log('\nCape config:\n', config);
     //ensure couchdb is running and is not in party mode
     
     // vouchdb.connect('http://' + instance.admin + ':' + instance.pwd + '@' + instance.url);
     var databases = config.couchdb.databases;
-    initCouch(env.couchdb)
+    var instance = info.couchdb;
+    initCouch(instance)
         .when(
             function(data) {
-                log('CouchDB is ok');
+                log('Initialized CouchDB');
+                //connect as admin from now on, not using sessions.
+                vouchdb.connect('http://' + instance.admin + ':' +
+                                instance.pwd + '@' + instance.url);
                 return configCouch(config.couchdb.config);
             })
         .when(
@@ -247,49 +138,50 @@ function start(env) {
                 log('Configured CouchDB');
                 return initDatabases(databases);
             })
-        .when(function(data) {
-            log('Installed design documents');
-            return monitor(databases);
-        })
         .when(
             function(data) {
-                log('Monitoring CouchDB');
-                return mailbox.connect(env.couchdb, databases.reception.name,
-                                       reception);
-            })
-        .when(
-            function(data) {
-                log('Reception is ok');
-                return mailbox.connect(env.couchdb, databases.postoffice.name,
-                                       postoffice);
-            })
-        .when(
-            function(data) {
-                log('Postoffice is ok');
-            }
-            ,function(error) {
-                log._e('Error initing cape', error);
-            }
-        );
-    
-    // config.agents.forEach(function(agent) {
-    //     postoffice.register(agent);
-    // });
-    
-    
+                log('Installed design documents');
+                log('Finished setting up CouchDB');
+                log('Starting agents');
+                info.agents.forEach(function(agent) {
+                    require('./agents/' + agent).work();
+                    log('Agent started: ', agent);
+                });
+            },
+            
+            
+            //     return monitor(databases);
+            // })
+            // .when(
+            //     function(data) {
+            //         log('Monitoring CouchDB');
+            //         return mailbox.connect(info.couchdb, databases.reception.name,
+            //                                reception);
+            //     })
+            // .when(
+            //     function(data) {
+            //         log('Reception is ok');
+            //         return mailbox.connect(info.couchdb, databases.postoffice.name,
+            //                                postoffice);
+            //     })
+            // .when(
+            //     function(data) {
+            //         log('Postoffice is ok');
+            //     }
+            function(error) {
+                log._e('Error setting up CouchDB', error);
+            });
 }
 
 module.exports = {
     start:start
 };
 
-
 start({
     couchdb: {
-        //TODO this should come from environment or other external source
-        admin: env.couchdb.admin, pwd: env.couchdb.pwd, url: 'localhost:5984'
+        admin: env.couchdb.admin, pwd: env.couchdb.pwd, url: env.couchdb.url 
     }
-    ,agents: []
+    ,agents: ['monitor', 'reception', 'postoffice', 'purger']
 });
 
 

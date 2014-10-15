@@ -1,19 +1,21 @@
+//reception.js
 var Path = require('path') ;
 var log = require('logthis').logger._create(Path.basename(__filename));
 var util = require('util');
 
-var env = require('./env');
-var config = require('./config');
+var env = require('./../env');
+var config = require('./../config');
 var vouchdb = require('vouchdb');
 var VOW = require('dougs_vow');
 var nodemailer = require("nodemailer");
 var extend = require('extend');
-var PBKDF2 = require('./pbkdf2');
+var PBKDF2 = require('./../lib/pbkdf2');
+
+var mailbox = require('./mailbox');
 
 var databases = config.couchdb.databases;
 
 //This module deals with all the messages arriving in the receptiion database.
-
 
 var smtpTransport = nodemailer.createTransport(
     {
@@ -101,15 +103,15 @@ function validate(creds) {
 }
 
 //Save a doc to the public db for clients to read
-function postPublicMsg(from, msg) {
-    if (from) {
-        log('Posting msg in public db with from ' + from);
+function postPublicMsg(to, msg) {
+    if (to) {
+        log('Posting msg in public db with to ' + to);
         vouchdb.dbEnsureExists(databases.public.name)
             .when(
                 function() {
                     var doc = {
                         timestamp: new Date().getTime(),
-                        from: from || "",
+                        to: to || "",
                         msg: msg};
                     return vouchdb.docSave(doc,databases.public.name);
                 }
@@ -213,11 +215,11 @@ function signup(creds) {
             })
         .when(
             function(mailOptions) {
-                postPublicMsg(creds.from, 'OK: email sent to ' + mailOptions.to);
+                postPublicMsg(creds.from, 'OK');
             }
             ,function(err) {
                 log('Error: ', err);
-                postPublicMsg(creds.from, 'Error: ' + err);
+                postPublicMsg(creds.from, 'ERROR:' + err);
             }
         );
 }
@@ -235,12 +237,19 @@ function confirm(msg) {
             function(someTempDoc) {
                 tempDoc = someTempDoc;
                 log('found uuid in temp database', tempDoc);
-                if (invalidUuids[msg.uuid]) {
+                if (!invalidUuids[msg.uuid]) {
+                    log('not racing ', invalidUuids, tempDoc.timestamp, databases.temp.ttl);
                     //to avoid race conditions:
-                    invalidUuids[msg.uuid] = true;
+                    var d = new Date();
+                    var doctime = d.setTime(tempDoc.timestamp);
+                    log('timestamp', d, tempDoc.timestamp, typeof tempDoc.timestamp);
+                    doctime = d.setTime(new Date().getTime() - databases.temp.ttl * 1000);
+                    log(d, new Date().getTime() - databases.temp.ttl * 1000);
                     if (tempDoc.timestamp >
-                        new Date().getTime() - databases.temp.ttl * 1000)
+                        new Date().getTime() - databases.temp.ttl * 1000) {
+                        invalidUuids[msg.uuid] = true;
                         return vouchdb.docRemove(tempDoc, databases.temp.name);
+                    }
                 }
                 //maintenance will clean up the token from temp.
                 return VOW.broken('Signup token expired or already used');
@@ -253,11 +262,11 @@ function confirm(msg) {
         .when(
             function(data) {
                 log('Added user ' , data);
-                postPublicMsg(msg.from, 'Added user ');
+                postPublicMsg(msg.from, 'OK: Added user ');
             }
             ,function(err) {
                 log._e('failed to add user: ', err);
-                postPublicMsg(msg.from, err);
+                postPublicMsg(msg.from, 'ERROR:' + err);
             }
         );
 }
@@ -299,11 +308,11 @@ function forgotpwd(msg, subject, email) {
             })
         .when(
             function(mailOptions) {
-                postPublicMsg(msg.from, 'OK: email sent to ' + mailOptions.to);
+                postPublicMsg(msg.from, 'OK: email sent');
             }
             ,function(err) {
                 log('Error: ', err);
-                postPublicMsg(msg.from, 'Error: ' + err);
+                postPublicMsg(msg.from, 'ERROR:' + err);
             }
         );
 }
@@ -322,7 +331,7 @@ function resetpwd(msg) {
             function(someTempDoc) {
                 tempDoc = someTempDoc;
                 log('found uuid in temp database', tempDoc);
-                if (invalidUuids[msg.uuid]) {
+                if (!invalidUuids[msg.uuid]) {
                     //to avoid race conditions:
                     invalidUuids[msg.uuid] = true;
                     if (tempDoc.timestamp >
@@ -341,11 +350,11 @@ function resetpwd(msg) {
         .when(
             function(data) {
                 log('Updated password' , data);
-                postPublicMsg(msg.from, 'Updated password for ' + tempDoc.name);
+                postPublicMsg(msg.from, 'OK');
             }
             ,function(err) {
                 log._e('failed to update password for  user: ' + tempDoc.name, err);
-                postPublicMsg(msg.from, err);
+                postPublicMsg(msg.from, 'ERROR:' + err);
             }
         );
 }
@@ -380,13 +389,23 @@ function handleMsg(msg) {
     }
 }
   
-//TODO
-//password protect writes? 
 function change(change) {
     log('Msg arrived at reception:', change);
     if (change && change.doc)
         handleMsg(change.doc);
 }
-  
-module.exports = change; 
+
+module.exports = {
+    work: function() {
+        mailbox.connect(env.couchdb, databases.reception.name, change)
+            .when(
+                function() {
+                    log('Reception agent is on the job');
+                },
+                function(err) {
+                    log('Reception error', err);
+                }
+            );
+    }
+};
 

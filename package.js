@@ -109,10 +109,10 @@ module.exports = {
         ,"vouchdb": "*"
         ,"logthis": "*"
         // ,"multicouch": "*"
-	,"nodemailer": "*"
-        ,"follow": "*"
-        ,"extend": "*",
-        "zxcvbn": "git://github.com/michieljoris/node-zxcvbn.git#master"
+	,"nodemailer": "1.3.x"
+        ,"follow": "2.0.x"
+        ,"extend": "2.0.x"
+        // "zxcvbn": "git://github.com/michieljoris/node-zxcvbn.git#master"
 	// "dbox": "*",
         // "nodemailer": "0.5.x",
         // "dbox": "0.6.x",

@@ -5,26 +5,54 @@ type: signup|forgotpwd|confirm
 
 
 * TODO
+** make sure deletion of public and temp is self-repairing  
 ** if cb in mailbox is called with error auto fix it!!!
 ** how to deal with backlog in mailboxes? 
 ** make reception unreadable by adding proxy
 ** test starting from scratch, empty database 
 ** passwordless login  
   this just needs adaption on the client side 
-** all jobs running permanently should be agents!!
-And somebody should be monitoring the agents and restart them !!! 
-** does cape needs less than full _admin rights?  
+** somebody should be monitoring the agents and restart them !!! 
+** do cape agents needs less than full _admin rights?  
   But nobody else can create databases though.  
-** implement wipe all designdocs in rean.js  
+** formalize error msgs!!! 
+  just strings for now 
+** enable https for couch
+** restart listeners to mailboxes when stopped
+** setup logrotate for couchdb!! 
+   http://wiki.apache.org/couchdb/Installing_on_Ubuntu
+   http://java.dzone.com/articles/how-install-couch-db-15-ubuntu
+** couchdb is timing out the reps trying!!!
+** how to setup frontend cape.js?
+With modules? So then we need bb-server!
+But source needs to be in cape
+Or just test in node, just don't use node dependencies,
+and also test in test-cape now and then, to see if it has the same results?
+
+** setup basic comm between front and backend 
+** hide follow under vouchdb.changes in the node version of vouchdb  
+** replace jquery dependency in node and browser in vouchdb!!
+replace vouch_couch with vouch_cradle on node
+or factor out jquery on node   
+or replace with request:
+https://github.com/iriscouch/browser-request/
+
+** have env.js get is vars from the ENV
+  now it's hardbaked, but under version source control 
+
+** DONE implement wipe all designdocs in rean.js  
+  for that matter, wipe all cape databases as well, and all users and all
+  replications
+  
+** DONE lock down npm dependencies of 3rd party libs!!
+   run npm shrinkwrap to find out version numbers
+** DONE store mandril email password in ENV 
+** DONE add from/to fields to msgs  
+** DONE all jobs running permanently should be agents!!
 ** DONE vouch_couch creates a session but
    sessions expire, admin:irma needs to be baked into all requests
 ** DONE enable cors for couchdb when initing
 ** DONE unique email/username when signing up!!! 
-** lock down npm dependencies of 3rd party libs!!
-** add to and from fields to msgs  
-** formalize error msgs!!! 
-** enable https for couch
-** store mandril email password in ENV 
 ** DONE lock down public from writing, is read only   
 ** DONE set filter in public for callback  
 ** DONE set view to list names in _users
@@ -34,28 +62,6 @@ otherwise browser can't access it!!!
 ** DONE mailboxes need to be locked down:
 set security object
 add appropriate doc_validate_update
-** restart listeners to mailboxes when stopped
-** setup logrotate for couchdb!! 
-   http://wiki.apache.org/couchdb/Installing_on_Ubuntu
-   http://java.dzone.com/articles/how-install-couch-db-15-ubuntu
-** couchdb is timing out the reps trying!!!
-   
-   
-** how to setup frontend cape.js?
-With modules? So then we need bb-server!
-But source needs to be in cape
-Or just test in node, just don't use node dependencies,
-and also test in test-cape now and then, to see if it has the same results?
-
-** set npm version dependencies!!  
-** setup basic comm between front and backend 
-** hide follow under vouchdb.changes in the node version of vouchdb  
-** replace jquery dependency in node and browser in vouchdb!!
-replace vouch_couch with vouch_cradle on node
-or factor out jquery on node   
-or replace with request:
-https://github.com/iriscouch/browser-request/
-
    
 * research
 ** other logins than couchdb native

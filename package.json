@@ -28,10 +28,9 @@
     "dougs_vow": "*",
     "vouchdb": "*",
     "logthis": "*",
-    "nodemailer": "*",
-    "follow": "*",
-    "extend": "*",
-    "zxcvbn": "git://github.com/michieljoris/node-zxcvbn.git#master"
+    "nodemailer": "1.3.x",
+    "follow": "2.0.x",
+    "extend": "2.0.x"
   },
   "devDependencies": {
     "docco": "*"
@@ -40,5 +39,5 @@
   "scripts": {
     "docs": "node node_modules/.bin/docco backend/backend-cape.js"
   },
-  "version": "0.1.11"
+  "version": "0.1.12"
 }

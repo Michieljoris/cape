@@ -1,10 +1,10 @@
 var util = require('util');
 var fs = require('fs-extra');
   
-var validator =  fs.readFileSync('./validator.js', { encoding: 'UTF8'});
-var validate_doc_update =  fs.readFileSync('./validate_doc_update.js', { encoding: 'UTF8'});
-var reception_vud =  fs.readFileSync('./reception-vud.js', { encoding: 'UTF8'});
-var public_vud =  fs.readFileSync('./public-vud.js', { encoding: 'UTF8'});
+var validator =  fs.readFileSync('./_design/validator.js', { encoding: 'UTF8'});
+var validate_doc_update =  fs.readFileSync('./_design/validate_doc_update.js', { encoding: 'UTF8'});
+var reception_vud =  fs.readFileSync('./_design/reception-vud.js', { encoding: 'UTF8'});
+var public_vud =  fs.readFileSync('./_design/public-vud.js', { encoding: 'UTF8'});
   
 var config =  {
     msg: {
@@ -68,10 +68,10 @@ var config =  {
 	        _design:  {
 	            name: 'cape',
 	            filters: {
-		        from: {
-		            name: 'from',
+		        to: {
+		            name: 'to',
 		            fn: "function(doc, req) { \
-if (doc && req.query.from === doc.from) return true;\
+if (doc && req.query.to === doc.to) return true;\
 return false;  }"
 		        }
 	            },
@@ -90,7 +90,7 @@ return false;  }"
             },
             temp: {
 	        name: 'temp',
-                ttl: 300
+                ttl: 3600
                 ,secObj: {"admins": {"names": [], "roles": []},
                           "members": {"names": ['_admin'], "roles": []}}
                 //only admin can read and write this database
