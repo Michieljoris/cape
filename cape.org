@@ -5,6 +5,34 @@ type: signup|forgotpwd|confirm
 
 
 * TODO
+** how about csrf?
+Several things have to happen for cross-site request forgery to succeed:
+- The attacker must target either a site that doesn't check the referrer header
+  (which is common) or a victim with a browser or plugin that allows referer
+  spoofing (which is rare).
+- The attacker must find a form submission at the target site, or a URL that has
+  side effects, that does something (e.g., transfers money, or changes the
+  victim's e-mail address or password).
+- The attacker must determine the right values for all the forms or URL inputs;
+  if any of them are required to be secret authentication values or IDs that the
+  attacker can't guess, the attack will fail.
+- The attacker must lure the victim to a Web page with malicious code while the
+victim is logged into the target site.
+
+>> at least set the proper cors origin!!!!
+>> only vulnerability are POST requests? 
+http://en.wikipedia.org/wiki/Cross-site_request_forgery
+
+
+** watch out for xss!!!
+sanitize anything that can get rendered by the browser, 
+for instance an agent can rewrite docs, or vud can disallow unescaped output 
+https://www.npmjs.org/package/validator
+also the app has to not allow to render unescaped data!!!!
+Apply csp!!!!
+http://www.html5rocks.com/en/tutorials/security/content-security-policy/
+
+
 ** make sure deletion of public and temp is self-repairing  
 ** if cb in mailbox is called with error auto fix it!!!
 ** how to deal with backlog in mailboxes? 
