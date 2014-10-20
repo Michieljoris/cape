@@ -1,3 +1,98 @@
+SIMPLICITY IS GOOD!!!
+
+* concepts 
+** defry, describe and delimit
+*** don't ever fucking repeat your self!
+   if yes -> refactor!! 
+*** describe what you're doing, 
+   clear logical flow, descriptive naming, choice comments, few or no corner case
+   handling or out of place logic, explicitly type or make clear what variables
+   are supposed to contain, use name params instead of list etc
+*** delimit
+break up in modules, pure/independant functions, not bigger than my head per
+function, clear global structure/architecture
+** modules with functions not objects with methods
+** librairies not frameworks
+** quotes
+*** Dijkstra:
+    Industry suffers from the managerial dogma that for the sake of stability
+    and continuity, the company should be independent of the competence of
+    individual employees.
+    
+** 12factor    
+   I. Codebase
+     One codebase tracked in revision control, many deploys
+   II. Dependencies
+     Explicitly declare and isolate dependencies
+   III. Config
+     Store config in the environment
+     in env.js, this is hardcoded now, but will get from environment or from
+     consul or other separate network?
+   IV. Backing Services
+     Treat backing services as attached resources
+   V. Build, release, run
+     Strictly separate build and run stages
+   VI. Processes
+     Execute the app as one or more stateless processes
+   VII. Port binding
+     Export services via port binding
+   VIII. Concurrency
+     Scale out via the process model
+   IX. Disposability
+     Maximize robustness with fast startup and graceful shutdown
+   X. Dev/prod parity
+     Keep development, staging, and production as similar as possible
+   XI. Logs
+     Treat logs as event streams
+   XII. Admin processes
+     Run admin/management tasks as one-off processes
+    
+
+* implementations
+** trello
+everyone their own multiple todo lists, organized by board
+share by the board/list/item, share ro or rw
+when owned/shared and writable any edits should propogate and magically change
+at other peoples boards/lists/items
+when owned/shared should be  able to share further when allowed
+when client shares something it should send msg/notification to other user it
+shares with.
+** shop 
+** social network 
+** inventory 
+
+* once logged in:
+- on signup mailbox should have been made.
+  if not or is deleted: 
+  1) client can send msg to reception, where is my mailbox?, confirm/error in
+     public
+  2) cape can check periodically and/or subscribe to db changes
+- on login client should send msg to mailbox saying hello     
+- on logout also send msg. 
+  otherwise (reverse) proxy can maybe track login/logout?  or hack CouchDB,
+  because couch doesn't tie sessions to users/logins unfortunately
+  or client can logout msg when it can't read its own mailbox?
+  
+* argument or using separate databases reception and public
+  semi public such as reception (wo) and public (ro) should not be merged with
+  private databases in case the read and write validate and security objects
+  are not configured properly, by accident or bugs or whatever. Better to keep
+  separate for security reasons, but in principle everything could be done with
+  read and write validate 
+* argument for separate mailboxes
+  same reason as for the semipublic databases. Security. New signups have no
+  right to anything initially, so they shouldn't be able to write to or read
+  from app data databases, not even secured through vuds and vrds and
+  roles/names, in case of bugs or misconfiguration perhaps. A new signup has no
+  roles and is not added to any database by name, so cannot not access app
+  databases by default, not through configuration, it's safer and easier,
+  rights have to be granted, not withheld.
+* more about separate databases:
+vuds and vrds are going to have a lot of app logic in them, like to keep this
+logic separate from housekeeping/basic access logic 
+  
+  
+  
 * specs
 ** mailbox msg:
 Reception: 
@@ -5,6 +100,29 @@ type: signup|forgotpwd|confirm
 
 
 * TODO
+** client should stop listening when error, since it locks up the browser/computer 
+   just try again now and again, or on the request of user instead.
+** make sure deletion of public and temp is self-repairing  
+** on signup create user mailbox  
+  monitor existence (for every user, infrequent, once per 5 minutes or rarer),
+  subscribe to db changes, react to nomailbox msg in reception from user,
+  username: is added and from: is added to msg, and ack send to public
+  (ok/error); Client should try periodically when mailbox is not there, to see
+  if it's back
+** validate_read_doc:
+access based on user role, doc type and taxonomy.  
+** send inter user message:
+- send msg to mailbox > instant:true/false from:username (validated by to be
+username vud) msg:mail to:otherusername content:"bla bla" 
+- gets replicated to postoffice, or postoffice listens to changes in every mailbox?  
+- postoffice puts msg in recipient's (:to) mailbox
+- if instant=true, remove from mailboxes after timeout, otherwise leave in
+  place?
+** make sure log messages are an independant stream to be
+picked up a separate process!!!!  Both from cape backend and frontend.
+** how about tests?
+- clojurescript repl to automate tests   
+- automated browser testing?  
 ** how about csrf?
 Several things have to happen for cross-site request forgery to succeed:
 - The attacker must target either a site that doesn't check the referrer header
@@ -33,7 +151,6 @@ Apply csp!!!!
 http://www.html5rocks.com/en/tutorials/security/content-security-policy/
 
 
-** make sure deletion of public and temp is self-repairing  
 ** if cb in mailbox is called with error auto fix it!!!
 ** how to deal with backlog in mailboxes? 
 ** make reception unreadable by adding proxy
@@ -197,52 +314,7 @@ require("./signout.js") Add this to the post handlers ,"/signin": signin
 email address
 	
 
-* concepts 
-** defry, describe and delimit
-*** don't ever fucking repeat your self!
-   if yes -> refactor!! 
-*** describe what you're doing, 
-   clear logical flow, descriptive naming, choice comments, few or no corner case
-   handling or out of place logic, explicitly type or make clear what variables
-   are supposed to contain, use name params instead of list etc
-*** delimit
-break up in modules, pure/independant functions, not bigger than my head per
-function, clear global structure/architecture
-** modules with functions not objects with methods
-** librairies not frameworks
-** quotes
-*** Dijkstra:
-    Industry suffers from the managerial dogma that for the sake of stability
-    and continuity, the company should be independent of the competence of
-    individual employees.
-    
-** 12factor    
-   I. Codebase
-     One codebase tracked in revision control, many deploys
-   II. Dependencies
-     Explicitly declare and isolate dependencies
-   III. Config
-     Store config in the environment
-   IV. Backing Services
-     Treat backing services as attached resources
-   V. Build, release, run
-     Strictly separate build and run stages
-   VI. Processes
-     Execute the app as one or more stateless processes
-   VII. Port binding
-     Export services via port binding
-   VIII. Concurrency
-     Scale out via the process model
-   IX. Disposability
-     Maximize robustness with fast startup and graceful shutdown
-   X. Dev/prod parity
-     Keep development, staging, and production as similar as possible
-   XI. Logs
-     Treat logs as event streams
-   XII. Admin processes
-     Run admin/management tasks as one-off processes
-    
-    
+     
 * doing
 ** clean up databases reception, temp and public
 reception: should stay clean, but check periodically and if there's more than n

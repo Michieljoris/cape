@@ -37,7 +37,7 @@ var config =  {
     },
     couchdb: {
         config: {
-            cors: { credentials: true, origin: '*' },
+            cors: { credentials: true, origins: 'http://localhost:9001' },
             httpd: { enable_cors: true },
             couch_httpd_auth: { timeout: 100*60*60 } //session length
         },
