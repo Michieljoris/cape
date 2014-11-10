@@ -187,7 +187,6 @@ start({
 
 //TEST
 function test() {
-    
     vouchdb.connect('http://' + 'localhost:5984');
     vouchdb.login('admin', 'irma')
         .when(

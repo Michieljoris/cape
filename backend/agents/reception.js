@@ -278,7 +278,7 @@ function confirm(msg) {
 //msg= { msg: 'forgotpwd', usernameOrPassword: 'mickie', from: '893453hjhjkh' }
 function forgotpwd(msg, subject, email) {
     log('forgotpwd', msg);
-    var id = msg.usernameOrPassword;
+    var id = msg.usernameOrEmail;
     var userDoc;
     checkUserId(id)
         .when(
