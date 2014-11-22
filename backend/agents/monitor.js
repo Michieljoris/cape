@@ -2,10 +2,11 @@
 var Path = require('path') ;
 var log = require('logthis').logger._create(Path.basename(__filename));
 
-var env = require('./../env');
-var config = require('./../config');
 var VOW = require('dougs_vow');
 var vouchdb = require("vouchdb");
+
+//module globals
+var env, config;
 
 //This function monitors the various databases for exceeding values as passed in.
 // The passed in value should be an object of props such as this one:
@@ -74,7 +75,10 @@ function monitor(databases) {
 }
   
 module.exports = {
+    init: function(someEnv, someConfig) {
+        env = someEnv, config = someConfig;
+        return this;
+    },
     work: function() {
-  
     }
 };

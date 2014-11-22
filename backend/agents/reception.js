@@ -3,28 +3,19 @@ var Path = require('path') ;
 var log = require('logthis').logger._create(Path.basename(__filename));
 var util = require('util');
 
-var env = require('./../env');
-var config = require('./../config');
 var vouchdb = require('vouchdb');
 var VOW = require('dougs_vow');
 var nodemailer = require("nodemailer");
 var extend = require('extend');
 var PBKDF2 = require('./../lib/pbkdf2');
 
-var mailbox = require('./mailbox');
+var mailbox = require('./lib/mailbox');
 
-var databases = config.couchdb.databases;
+
+//module globals
+var env, config, databases, smtpTransport;
 
 //This module deals with all the messages arriving in the receptiion database.
-
-var smtpTransport = nodemailer.createTransport(
-    {
-        service: "Mandrill",
-        auth: {
-            user: env.mandrill.user,
-            pass: env.mandrill.pwd
-        }
-    });
 
 //Send mail with defined transport object
 function sendMail(mailOptions) {
@@ -396,7 +387,24 @@ function change(change) {
 }
 
 module.exports = {
+    init: function(someEnv, someConfig) {
+        env = someEnv, config = someConfig;
+        databases = config.couchdb.databases;
+        smtpTransport = nodemailer.createTransport(
+            {
+                service: "Mandrill",
+                auth: {
+                    user: env.mandrill.user,
+                    pass: env.mandrill.pwd
+                }
+            });
+
+
+        return this;
+    },
     work: function() {
+               log(env, config);
+ 
         mailbox.connect(env.couchdb, databases.reception.name, change)
             .when(
                 function() {

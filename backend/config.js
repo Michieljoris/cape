@@ -140,32 +140,6 @@ return false;  }"
     }
 };
 
-config.createDesignDoc = function createDesignDoc(design) {
-    if (!design) return false;
-    var doc = {
-        _id: '_design/' + design.name
-    };
-    if (design.validate_doc_update)
-        doc.validate_doc_update = design.validate_doc_update;
-    if (design.lib) {
-        doc.lib = design.lib;
-    }
-    if (design.views) {
-        doc.views = {};
-        Object.keys(design.views).forEach(function(key) {
-            doc.views[design.views[key].name] = { map: design.views[key].fn };
-        });
-    }
-    if (design.filters) {
-        doc.filters = {};
-        Object.keys(design.filters).forEach(function(key) {
-            doc.filters[design.filters[key].name] = design.filters[key].fn;
-        });
-    }
-    return doc;
-    
-};
-  
 // console.log(util.inspect(config, { depth: 10, colors: true}))  ;
     
 module.exports = config;

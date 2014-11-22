@@ -2,11 +2,13 @@
 var Path = require('path') ;
 var log = require('logthis').logger._create(Path.basename(__filename));
 
-var env = require('./../env');
-var config = require('./../config');
 var VOW = require('dougs_vow');
 var vouchdb = require("vouchdb");
 
+
+//module globals
+var env = require('./../env');
+var config = require('./../config');
 
 //Periodically remove all docs with a timestamp less than new Date().getTime()
 //minus db.ttl. Docs should be at most for db.ttl * 2 seconds in the database
@@ -55,6 +57,10 @@ function removeExpired(db) {
 }
   
 module.exports = {
+    init: function(someEnv, someConfig) {
+        env = someEnv, config = someConfig;
+        return this;
+    },
     work: function() {
     
     }

@@ -1,4 +1,13 @@
 //rean.js
+//Run this file to start up the backend
+//Control debug out put with logthis
+//Configuration is in env.js and config.js
+
+//Pass environment, config and list of agents to start: it then connects to a
+//couchdb instance (from env.js), installing admin if needed, configuring it and
+//creating and configuring databases and their design docs as spelled out in
+//config.js after which it starts the agents as per the list passed into start.
+
 var Path = require('path') ;
 require('logthis').config({ _on: true,
                             'rean.js': 'debug',
@@ -10,11 +19,36 @@ require('logthis').config({ _on: true,
                           });
 var log = require('logthis').logger._create(Path.basename(__filename));
 
-var env = require('./env');
-var config = require('./config');
 var VOW = require('dougs_vow');
 var vouchdb = require("vouchdb");
 
+//Given a JS object, it will return a proper design doc that can be saved to couchdb.
+var createDesignDoc = function createDesignDoc(design) {
+    if (!design) return false;
+    var doc = {
+        _id: '_design/' + design.name
+    };
+    if (design.validate_doc_update)
+        doc.validate_doc_update = design.validate_doc_update;
+    if (design.lib) {
+        doc.lib = design.lib;
+    }
+    if (design.views) {
+        doc.views = {};
+        Object.keys(design.views).forEach(function(key) {
+            doc.views[design.views[key].name] = { map: design.views[key].fn };
+        });
+    }
+    if (design.filters) {
+        doc.filters = {};
+        Object.keys(design.filters).forEach(function(key) {
+            doc.filters[design.filters[key].name] = design.filters[key].fn;
+        });
+    }
+    return doc;
+    
+};
+  
 
 
 function initOneDatabase(db, wipeDesignDocs) {
@@ -31,7 +65,7 @@ function initOneDatabase(db, wipeDesignDocs) {
             })
         .when(
             function(data) {
-                var designDoc = config.createDesignDoc(db._design);
+                var designDoc = createDesignDoc(db._design);
                 if (designDoc) { 
                     return vouchdb.docUpdate(designDoc, db.name);
                 }
@@ -117,13 +151,16 @@ function configCouch(config) {
 //         admin: 'admin', pwd: 'pwd', url: 'localhost:5984'
 //     }
 //}
-function start(info) {
-    log('\nCape config:\n', config);
+function start(env, config, agents) {
+    var instance = {
+        admin: env.couchdb.admin, pwd: env.couchdb.pwd, url: env.couchdb.url 
+    };
+
+    log('\nCape connecting to:\n', instance);
     //ensure couchdb is running and is not in party mode
     
     // vouchdb.connect('http://' + instance.admin + ':' + instance.pwd + '@' + instance.url);
     var databases = config.couchdb.databases;
-    var instance = info.couchdb;
     initCouch(instance)
         .when(
             function(data) {
@@ -143,8 +180,8 @@ function start(info) {
                 log('Installed design documents');
                 log('Finished setting up CouchDB');
                 log('Starting agents');
-                info.agents.forEach(function(agent) {
-                    require('./agents/' + agent).work();
+                agents.forEach(function(agent) {
+                    require('./agents/' + agent).init(env, config).work();
                     log('Agent started: ', agent);
                 });
             },
@@ -173,18 +210,15 @@ function start(info) {
             });
 }
 
+start( require('./env'),require('./config'),
+       ['monitor', 'reception', 'postoffice', 'purger']);
+
 module.exports = {
     start:start
 };
 
-start({
-    couchdb: {
-        admin: env.couchdb.admin, pwd: env.couchdb.pwd, url: env.couchdb.url 
-    }
-    ,agents: ['monitor', 'reception', 'postoffice', 'purger']
-});
 
-
+      
 //TEST
 function test() {
     vouchdb.connect('http://' + 'localhost:5984');
@@ -233,4 +267,21 @@ function test() {
 //             );
 //     }
 // );
+
+
+var edges = this.graph.edges_from(this.curr);
+for (var i = 0; i < edges.length; i++) {
+    var next = edges[i];
+    var edge_weight = this.graph.edge_weight(this.curr, next);
+    if (edge_weight != Infinity) {
+        this.neighbors.push(next);
+        mark_changed(next);
+        if (!this.visited[next]) {
+            this.g[next] = this.g[this.curr] + edge_weight;
+            this.open.push(next);
+            this.parent[next] = this.curr;
+            this.visited[next] = true;
+        }
+    }
+}
 

@@ -11,7 +11,7 @@ logged in secure messages can easily be sent. The big challenge for =cape= is
 going to be implementing and ensuring sufficient permissions, roles and access
 permissions for the CouchDB users since CouchDB has only per database read
 permissions, so the only way to prevent access is to clone data in separate
-databases. Unless the rcouch merge happens. Other goodies on the way are the the
+databases. Unless the rcouch merge happens. Other goodies on the way are the
 BigCouch merges.
 
 * Signing up new users and resetting password
