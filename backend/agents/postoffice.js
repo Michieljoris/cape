@@ -31,7 +31,7 @@ module.exports = {
         return this;
     },
     work: function() {
-        mailbox.connect(env.couchdb, databases.postoffice.name, change)
+        mailbox.connect(env.couchdb, databases.aggregate.name, change)
             .when(
                 function() {
                     log('Postoffice agent is on the job');

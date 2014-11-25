@@ -7,9 +7,11 @@ var vouchdb = require('vouchdb');
 var VOW = require('dougs_vow');
 var nodemailer = require("nodemailer");
 var extend = require('extend');
-var PBKDF2 = require('./../lib/pbkdf2');
 
-var mailbox = require('./lib/mailbox');
+
+var __basePath = require('../../__basePath');
+var mailbox = require(__basePath + '/backend/agents/lib/mailbox');
+var users = require(__basePath + '/backend/lib/users');
 
 
 //module globals
@@ -36,18 +38,6 @@ function sendMail(mailOptions) {
     return vow.promise;
 }
 
-//salt for pbkdf2
-function generateSalt(len) {
-    var set = '0123456789abcdefghijklmnopqurstuvwxyz',
-    setLen = set.length,
-    salt = '';
-    for (var i = 0; i < len; i++) {
-        var p = Math.floor(Math.random() * setLen);
-        salt += set[p];
-    }
-    return salt;
-}
-
 //This should validate most possible email addresses while still not validating
 //all nonsense email addresses.
 function validateEmail(email) { 
@@ -55,37 +45,38 @@ function validateEmail(email) {
     return re.test(email);
 } 
 
-//Ensures creds contain email, username and proper password, returns promise.
+//Ensures creds contain email and proper password, returns promise.
 function validate(creds) {
     var vow = VOW.make();
     var error;
     if (!validateEmail(creds.email)) vow.breek("Invalid email address");
     else if (!creds.pwd || creds.pwd.length < 8)
         vow.breek("Passwords should be 8 or more characters");
-    else if (!creds.username) vow.breek("Username is empty");
+    // else if (!creds.username) vow.breek("Username is empty");
     else {
-        vouchdb.userGet(creds.username)
+        vouchdb.userGet(users.normalizeEmail(creds.email))
             .when(
                 function() {
-                    vow.breek('Username ' + creds.username + ' is already in use');
+                    vow.breek('Email ' + creds.email + ' is already in use');
                 },
-                function() {
-                    vouchdb.view(databases._users._design.name,
-                                 databases._users._design.views.list.name,
-                                 { key: creds.email },
-                                 databases._users.name)
-                        .when(
-                            function(data) {
-                                if (data.rows.length)
-                                    vow.breek('Email ' + creds.email + ' is already in use');
-                                else vow.keep();
-                            },
-                            function(err) {
-                                vow.breek('Unable to check username list', err);
-                                log(err);
-                            }
-                        );
-                }
+                vow.keep
+                // function() {
+                //     vouchdb.view(databases._users._design.name,
+                //                  databases._users._design.views.list.name,
+                //                  { key: creds.email },
+                //                  databases._users.name)
+                //         .when(
+                //             function(data) {
+                //                 if (data.rows.length)
+                //                     vow.breek('Email ' + creds.email + ' is already in use');
+                //                 else vow.keep();
+                //             },
+                //             function(err) {
+                //                 vow.breek('Unable to check username list', err);
+                //                 log(err);
+                //             }
+                //         );
+                // }
                 
             );
                 
@@ -118,56 +109,38 @@ function postPublicMsg(to, msg) {
     }
 }
 
-//With just the username, pwd and some optional extra properties (obj) create a
-//userDoc ready for insertion into the _users database. This means hashing the
-//pwd and adding the necessary salt and iteration and scheme used.
-function createUserDoc(username, pwd, obj) {
-    obj = obj || {};
-    var salt = generateSalt(64);
-    var iterations = 10;
-    
-    var mypbkdf2 = new PBKDF2(pwd, iterations, salt);
-    var derivedKey = mypbkdf2.deriveKey();
-    
-    return extend(obj, {
-        name: username,
-        iterations: iterations,
-        salt: salt,
-        password_scheme: 'pbkdf2',
-        derived_key: derivedKey
-    });
-}
-
-//Check whether id exists as email or user name in the _users database, if so
-//return it. Returns a userDoc with at least a name and an email
-function checkUserId(id) {
+//Check whether user exists. A user is identified by his email address with the
+//domain part lower cased.
+function checkUserId(email) {
     var vow = VOW.make();
-    if (!id || id.length === 0) {
-        vow.breek('Empty username/email');
+    if (!email || typeof email !== 'string' || email.length === 0) {
+        vow.breek('Empty email');
     }
-    else vouchdb.userGet(id)
-        .when(
-            function(data) {
-                vow.keep(data);
-            },
-            function() {
-                vouchdb.view(databases._users._design.name,
-                             databases._users._design.views.list.name,
-                             { key: id },
-                             databases._users.name)
-                    .when(
-                        function(data) {
-                            if (data.rows.length)
-                                vow.keep(data.rows[0].value);
-                        },
-                        function(err) {
-                            vow.breek(id + ' not found' + err);
-                            log(err);
-                        }
-                    );
-            }
+    else {
+        vouchdb.userGet(users.normalizeEmail(email))
+            .when(
+                function(data) {
+                    vow.keep(data);
+                },
+                // function() {
+                //     vouchdb.view(databases._users._design.name,
+                //                  databases._users._design.views.list.name,
+                //                  { key: email },
+                //                  databases._users.name)
+                //         .when(
+                //             function(data) {
+                //                 if (data.rows.length)
+                //                     vow.keep(data.rows[0].value);
+                //             },
+                function(err) {
+                    vow.breek(email + ' not found' + err);
+                    log(err);
+                }
+                //         );
+                // }
                 
-        );
+            );
+    }
     return vow.promise;
 }
 
@@ -175,7 +148,7 @@ function checkUserId(id) {
 
 //Validate creds passed in, timestamps it, stores it in temp db and sends a
 //confirmation email, with the uuid of the doc in temp. If error occurs and the creds contained a key id, leave msg in public for the client to retrieve.
-//creds = { msg: 'signup', username: 'mickie', pwd: 'somepwd', email:'a@b.com', from: 'sdfasdf78979' }
+//creds = { msg: 'signup',  pwd: 'somepwd', email:'a@b.com', from: 'sdfasdf78979' }
 function signup(creds) {
     log('creds:', creds);
     validate(creds)
@@ -186,8 +159,7 @@ function signup(creds) {
         .when(
             function() {
                 var tempDoc = {
-                    userDoc: createUserDoc(creds.username, creds.pwd,
-                                           { email: creds.email }),
+                    userDoc:users.createUserDoc(creds.email, creds.pwd, {}),
                     timestamp: new Date().getTime()
                 };
                 return vouchdb.docSave(tempDoc, databases.temp.name);
@@ -266,10 +238,10 @@ function confirm(msg) {
 //stick the found id in the temp db and send user an email with a link with a
 //query of resetpwd=msg._id so we can find it again when the user clicks on the
 //link in the email
-//msg= { msg: 'forgotpwd', usernameOrPassword: 'mickie', from: '893453hjhjkh' }
+//msg= { msg: 'forgotpwd', email: 'mickie', from: '893453hjhjkh' }
 function forgotpwd(msg, subject, email) {
     log('forgotpwd', msg);
-    var id = msg.usernameOrEmail;
+    var id = msg.email;
     var userDoc;
     checkUserId(id)
         .when(
@@ -290,7 +262,7 @@ function forgotpwd(msg, subject, email) {
                 //send an email with a link referring to the stored doc in temp
                 var mailOptions = {
                     from: "noreply@axion5.net", // sender address
-                    to: userDoc.email, // list of receivers
+                    to: userDoc.name, // list of receivers
                     subject: subject, // Subject line
                     // text: data.message // plaintext body
                     html: email(doc.id)// html body
@@ -316,7 +288,7 @@ function resetpwd(msg) {
     log(msg);
     var tempDoc;
     //find the proper doc in temp using the received uuid. This doc has the
-    //username to find the proper doc in _users
+    //email to find the proper doc in _users
     vouchdb.docGet(msg.uuid, databases.temp.name)
         .when(
             function(someTempDoc) {
@@ -344,7 +316,7 @@ function resetpwd(msg) {
                 postPublicMsg(msg.from, 'OK');
             }
             ,function(err) {
-                log._e('failed to update password for  user: ' + tempDoc.name, err);
+                log._e('failed to update password for  user: ' + tempDoc.email, err);
                 postPublicMsg(msg.from, 'ERROR:' + err);
             }
         );

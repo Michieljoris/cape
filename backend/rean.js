@@ -10,7 +10,7 @@
 
 var Path = require('path') ;
 require('logthis').config({ _on: true,
-                            'rean.js': 'debug',
+                            "rean.js": 'debug',
                             'mailbox.js': 'debug',
                             'postoffice.js': 'debug',
                             'reception.js': 'debug',
@@ -22,38 +22,13 @@ var log = require('logthis').logger._create(Path.basename(__filename));
 var VOW = require('dougs_vow');
 var vouchdb = require("vouchdb");
 
-//Given a JS object, it will return a proper design doc that can be saved to couchdb.
-var createDesignDoc = function createDesignDoc(design) {
-    if (!design) return false;
-    var doc = {
-        _id: '_design/' + design.name
-    };
-    if (design.validate_doc_update)
-        doc.validate_doc_update = design.validate_doc_update;
-    if (design.lib) {
-        doc.lib = design.lib;
-    }
-    if (design.views) {
-        doc.views = {};
-        Object.keys(design.views).forEach(function(key) {
-            doc.views[design.views[key].name] = { map: design.views[key].fn };
-        });
-    }
-    if (design.filters) {
-        doc.filters = {};
-        Object.keys(design.filters).forEach(function(key) {
-            doc.filters[design.filters[key].name] = design.filters[key].fn;
-        });
-    }
-    return doc;
-    
-};
-  
+var __basePath = require('../__basePath');
+var utils = require(__basePath + '/backend/lib/utils');
+var Users = require(__basePath + '/backend/lib/users');
 
-
+//Check whether it exists, create if necessary, then check for _design doc,
+//create if necessary, set the doc to whats in config (db)
 function initOneDatabase(db, wipeDesignDocs) {
-    //check whether it exists, create if necessary, then check for _design doc,
-    //create if necessary, set the doc to whats in config (db)
     return vouchdb.dbEnsureExists(db.name)
         .when(
             function(info) {
@@ -65,7 +40,7 @@ function initOneDatabase(db, wipeDesignDocs) {
             })
         .when(
             function(data) {
-                var designDoc = createDesignDoc(db._design);
+                var designDoc = utils.createDesignDoc(db._design);
                 if (designDoc) { 
                     return vouchdb.docUpdate(designDoc, db.name);
                 }
@@ -86,7 +61,7 @@ function initDatabases(databases) {
 }
 
 
-//Make sure there is a couchdb instance and that it is not in party mode, if so
+//Make sure there is a couchdb instance and that it is eot in party mode, if so
 //set admin to credentials that have been passed in.
 function initCouch(instance) {
     if (instance.url.indexOf('http://') === 0) {
@@ -143,7 +118,6 @@ function configCouch(config) {
     return VOW.every(vows);
 }
 
-
 //Main function that starts the node cape process.
 
 //Example config:
@@ -161,10 +135,12 @@ function start(env, config, agents) {
     
     // vouchdb.connect('http://' + instance.admin + ':' + instance.pwd + '@' + instance.url);
     var databases = config.couchdb.databases;
+
+    log('Initializing CouchDB');
     initCouch(instance)
         .when(
             function(data) {
-                log('Initialized CouchDB');
+                log('Configuring CouchDB');
                 //connect as admin from now on, not using sessions.
                 vouchdb.connect('http://' + instance.admin + ':' +
                                 instance.pwd + '@' + instance.url);
@@ -172,12 +148,30 @@ function start(env, config, agents) {
             })
         .when(
             function(data) {
-                log('Configured CouchDB');
+                log('Creating system databases and installing design documents');
                 return initDatabases(databases);
             })
         .when(
             function(data) {
-                log('Installed design documents');
+                log("Creating/ensuring initial users");
+                //empty arrays turn into a broken vow, we don't want that.
+                if (!config.initialUsers || !config.initialUsers.length)
+                    return VOW.kept();
+                var vows = [];
+                config.users.initialUsers.forEach(
+                    function(user) {
+                        vows.push(Users.ensureUserExists(user.email, user.pwd, user.name));
+                    });
+                return VOW.every(vows);
+            })
+
+        .when(
+            function(data) {
+                log("Creating user databases and configuring them");
+                return Users.ensureUserDbsExist(config);
+            })
+        .when(
+            function(data) {
                 log('Finished setting up CouchDB');
                 log('Starting agents');
                 agents.forEach(function(agent) {
@@ -218,8 +212,6 @@ module.exports = {
 };
 
 
-      
-//TEST
 function test() {
     vouchdb.connect('http://' + 'localhost:5984');
     vouchdb.login('admin', 'irma')
@@ -267,21 +259,4 @@ function test() {
 //             );
 //     }
 // );
-
-
-var edges = this.graph.edges_from(this.curr);
-for (var i = 0; i < edges.length; i++) {
-    var next = edges[i];
-    var edge_weight = this.graph.edge_weight(this.curr, next);
-    if (edge_weight != Infinity) {
-        this.neighbors.push(next);
-        mark_changed(next);
-        if (!this.visited[next]) {
-            this.g[next] = this.g[this.curr] + edge_weight;
-            this.open.push(next);
-            this.parent[next] = this.curr;
-            this.visited[next] = true;
-        }
-    }
-}
 

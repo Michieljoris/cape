@@ -386,7 +386,6 @@ function bit_rol(num, cnt)
 
 function PBKDF2(password, num_iterations, salt)
 {
-    console.log('hello');
     function randomString(length, chars) {
         chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         var result = '';
