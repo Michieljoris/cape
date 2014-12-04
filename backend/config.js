@@ -198,6 +198,20 @@ return false;  }"
 	        ,_design:  {
 	            name: 'cape',
 	            validate_doc_update: reception_vud
+	            ,filters: {
+		        foo: {
+		            name: 'foo',
+		            fn: function(doc, req) {
+                                if (doc.target === 'foo') return true;
+                                return false;  }
+		        }
+		        ,bar: {
+		            name: 'bar',
+		            fn: function(doc, req) {
+                                if (doc.target === 'bar') return true;
+                                return false;  }
+		        }
+	            }
 	        }
             }
         }

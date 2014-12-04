@@ -116,7 +116,7 @@ function ensureUserDbsExist(config){
         .when(
             function(data) {
                 var users = data.rows;
-                if (users.length) return VOW.kept();
+                if (!users.length) return VOW.kept();
                 users.forEach(function(data) {
                     vows.push(ensureUserDbExists(data.value, config));
 		});

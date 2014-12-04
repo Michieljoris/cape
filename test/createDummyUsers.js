@@ -30,15 +30,93 @@ var instance = {
 vouchdb.connect('http://' + instance.admin + ':' +
                 instance.pwd + '@' + instance.url);
 
+
+var reps = [
+    {
+        source: "aggregate",
+        target: "foo",
+        continuous: true,
+        filter: "cape/foo",
+        role: '_admin',
+        create_target: true,
+        _id: "foo"
+        
+    }
+
+    ,{
+        source: "aggregate",
+        target: "bar",
+        continuous: true,
+        filter: "cape/bar",
+        role: '_admin',
+        create_target: true,
+        _id: "bar"
+        
+    }
+];
+
+
+vouchdb.info()
+    .when(
+        function(data) {
+            console.log(data);
+            return vouchdb.docSave({test: 1 }, 'test');
+            // var vows = [];
+            // reps.forEach(function(rep) {
+            //     vows.push(vouchdb.replicationRemove(rep._id)); });
+            // return VOW.every(vows);
+        })
+    .when(
+        function(data) {
+            console.log(data);
+        },
+        function(err) {
+            console.log('Err', err);
+        });
+
+// vouchdb.info()
+
+    // .when(
+    //     function(data) {
+    //         console.log(data);
+    //         var vows = [];
+    //         reps.forEach(function(rep) {
+    //             vows.push(vouchdb.replicationRemove(rep._id)); });
+    //         return VOW.every(vows);
+    //     })
+    // .when(
+    //     function(data) {
+    //         console.log(data);
+    //         var vows = [];
+    //         reps.forEach(function(rep) {
+    //             vows.push(vouchdb.replicationAdd(rep)); });
+    //         return vows.length ? VOW.every(vows) : VOW.kept("No reps passed in");
+    //     })
+    // .when(
+    //     function(data) {
+    //         console.log(data);
+    //         var vows = [];
+    //         vows.push(vouchdb.dbConflicts(true, 'foo'));   vows.push(vouchdb.dbConflicts(true, 'bar'));
+    //         return VOW.every(vows);
+    //     })
+    // .when(
+    //     function(err) {
+    //         console.log('Conflicts: ', err);
+    //     }
+    //     ,function(err) {
+    //         console.log('Error: ', err);
+    //     }
+    // );
+
 var createUserDoc = Users.createUserDoc;
 var dbNameFromUserId = Users.dbNameFromUserId;
 
 var users = [
-    // { name: "John", email: "john@Email.com", pwd: "pwd" },
-    // { name: "Pete", email: "Pete@CAPITAL.com", pwd: "pwd" },
-    { name: "Axel", email: "axel@email.com", pwd: "pwd" }
-    // { name: "Rose", email: "Rose@email.com", pwd: "pwd" },
-    // { name: "Mary", email: "MARY@email.com", pwd: "pwd" }
+    // { name: "john", email: "john@email.com", pwd: "pwd" },
+    // { name: "pete", email: "pete@capital.com", pwd: "pwd" },
+    { name: "axel", email: "axel@email.com", pwd: "pwd" }
+    // { name: "rose", email: "rose@email.com", pwd: "pwd" },
+    // { name: "mary", email: "mary@email.com", pwd: "pwd" }
 ];
 
 
