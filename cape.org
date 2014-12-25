@@ -1,70 +1,71 @@
+* cape.org
 SIMPLICITY IS GOOD!!!
-* procedure to set up project
-** backend
-  Start couch in a docker container
-  bin/dcouch
-  open localhost:5984/_utils
-  To tail the couch's log:
-  docker-enter rcouch
-  Then:
-  tail -f /rel/rcouch/log/couch.log
-  start backend:
-  node backend/rean.js
-  configure email and couch connection details in backend/env.js
-  configure backend workers in backend/config.js
+** procedure to set up project
+*** backend
+   Start couch in a docker container
+   bin/dcouch
+   open localhost:5984/_utils
+   To tail the couch's log:
+   docker-enter rcouch
+   Then:
+   tail -f /rel/rcouch/log/couch.log
+   start backend:
+   node backend/rean.js
+   configure email and couch connection details in backend/env.js
+   configure backend workers in backend/config.js
 
-  reset couch with bin/dreset
+   reset couch with bin/dreset
 
-* general programming concepts
-** defry, describe and delimit
-*** don't ever fucking repeat your self!
-   if yes -> refactor!!
-*** describe what you're doing,
-   clear logical flow, descriptive naming, choice comments, few or no corner case
-   handling or out of place logic, explicitly type or make clear what variables
-   are supposed to contain, use name params instead of list etc
-*** delimit
+** general programming concepts
+*** defry, describe and delimit
+**** don't ever fucking repeat your self!
+    if yes -> refactor!!
+**** describe what you're doing,
+    clear logical flow, descriptive naming, choice comments, few or no corner case
+    handling or out of place logic, explicitly type or make clear what variables
+    are supposed to contain, use name params instead of list etc
+**** delimit
 break up in modules, pure/independant functions, not bigger than my head per
 function, clear global structure/architecture
-** modules with functions not objects with methods
-** librairies not frameworks
-** quotes
-*** Dijkstra:
-    Industry suffers from the managerial dogma that for the sake of stability
-    and continuity, the company should be independent of the competence of
-    individual employees.
+*** modules with functions not objects with methods
+*** librairies not frameworks
+*** quotes
+**** Dijkstra:
+     Industry suffers from the managerial dogma that for the sake of stability
+     and continuity, the company should be independent of the competence of
+     individual employees.
 
-** 12factor
-   I. Codebase
-     One codebase tracked in revision control, many deploys
-   II. Dependencies
-     Explicitly declare and isolate dependencies
-   III. Config
-     Store config in the environment
-     in env.js, this is hardcoded now, but will get from environment or from
-     consul or other separate network?
-   IV. Backing Services
-     Treat backing services as attached resources
-   V. Build, release, run
-     Strictly separate build and run stages
-   VI. Processes
-   Execute the app as one or more stateless processes
-     VII. Port binding
-     Export services via port binding
-   VIII. Concurrency
-     Scale out via the process model
-   IX. Disposability
-     Maximize robustness with fast startup and graceful shutdown
-   X. Dev/prod parity
-     Keep development, staging, and production as similar as possible
-   XI. Logs
-     Treat logs as event streams
-   XII. Admin processes
-     Run admin/management tasks as one-off processes
+*** 12factor
+    I. Codebase
+      One codebase tracked in revision control, many deploys
+    II. Dependencies
+      Explicitly declare and isolate dependencies
+    III. Config
+      Store config in the environment
+      in env.js, this is hardcoded now, but will get from environment or from
+      consul or other separate network?
+    IV. Backing Services
+      Treat backing services as attached resources
+    V. Build, release, run
+      Strictly separate build and run stages
+    VI. Processes
+    Execute the app as one or more stateless processes
+      VII. Port binding
+      Export services via port binding
+    VIII. Concurrency
+      Scale out via the process model
+    IX. Disposability
+      Maximize robustness with fast startup and graceful shutdown
+    X. Dev/prod parity
+      Keep development, staging, and production as similar as possible
+    XI. Logs
+      Treat logs as event streams
+    XII. Admin processes
+      Run admin/management tasks as one-off processes
 
-* project concepts/design
-** problem is removing illegal docs
-*** ideas
+** project concepts/design
+*** problem is removing illegal docs
+**** ideas
 Don't use sessions, have user authenticate for every request?
 Or to create a quasi session create a temp user with the same roles as actual
 user, with the added role of the user id (user email). This user can be
@@ -73,7 +74,7 @@ when the user account gets deleted, which rean can do after a certain amount of
 no pings from client, or after a msg from client. When the proper user account
 doesn't have the email as role it can't be used to access any of the dbs, except
 to ask 
-*** solution one
+**** solution one
 Use aggregate with vdu
 Vdu only lets through docs which have an as attribute that has the hash of the
 access signature. This is the name of the database where this doc is supposed to
@@ -105,7 +106,7 @@ just process the backlog and make the docs updateable again.
 1) This duplicates the data at least once if all data is accessed by clients (that
 is the whole of the data in aggregate is divided up in read only partial dbs).
 2) 
-** Three ways to change access signature to doc
+*** Three ways to change access signature to doc
 1) Write a new doc that is a clone of the old one, but with a new access
    signature, and delete the old one. 
 2) Write a new access signature to the doc, but also include the old as a hash
@@ -114,7 +115,7 @@ is the whole of the data in aggregate is divided up in read only partial dbs).
    their as is concerned. The agent also can purge the docs from as dbs where
    the doc is not allowed anymore.
 
-** prop signature access (ps)
+*** prop signature access (ps)
 ps(doc) -> as This function takes a doc and returns a access signature hash.
 This is based on the props of the doc and ultimately on the doc's explicit read
 access object. Every rep uses the same filter, but with a query param stating
@@ -124,32 +125,32 @@ auto created databases. The other option is to create a view on aggregate that
 gets all docs with a current hash different from the hash calculated new
 ps(doc). These should be deleted from the as databases, but also restart the
 reps to the docs to their new as db.
-*** When changing the as of doc:
+**** When changing the as of doc:
 - Add the old as hash so that rean can remove it from the proper as db
 Or mark it otherwise but add the old read access object. Vdu can ensure the as
 hashes (current and old) match those of the old doc and updated doc.
 - Write a new doc but delete the old
-*** When a client writes a doc that is affected by ps rules:
+**** When a client writes a doc that is affected by ps rules:
 - A new doc can just be written straight, the reps will put it in the right db
 When updating a doc a client can do the following:
 - Write a new doc, delete the old.
 - You can not write it unless you know the hash of the updated doc. The old one
   is the name of the db the doc came from, which should also be a prop of the
   doc. The new one can be gotten by posting it and asking rean to calculate it.
-*** In both cases:
+**** In both cases:
 You can use the update function:
 Add new doc, or props to update and delete. The update function will calculate
 as hash from props and access object. If same as current doc it will just write
 the new object. If different it will write the doc with the new and old hash.
 This would be validated again by du, since this is just a simple rewrite
 function. 
-** Aggregate vdu
+*** Aggregate vdu
 As hash has to match the read access object
 Old as hash has to exist if old doc's as hash is different from the updated one.
 If same it cannot exist. Or just the old as hash (matching the doc in the db).
-** A user's doc stores his private data, such as app state, contact details etc.
-   If the user is actually a group, the group data is stored here.
-** database per user.
+*** A user's doc stores his private data, such as app state, contact details etc.
+    If the user is actually a group, the group data is stored here.
+*** database per user.
 Doubling as mailbox and data source for user.
 Ways to limit excessive duplication:
 1) Access attachments, binary files through a shared binary/attachment
@@ -159,28 +160,28 @@ Ways to limit excessive duplication:
    aggregate anyway and the only reason for these user and group databases to
    exist is to control and limit access to a certain subset of docs from this
    aggregate.
-** sharing data
+*** sharing data
 Two ways: either replicate and duplicate data to all users who have access
 permissions, or move to separate database and set secObj.members.{roles|names}
 to who you want to have access. The name should be guaranteed unique and
 something like "shared_89334jkk8njfu83hfu3hf". This is created by sending a
 message to cape who creates the database, changes the ownership? In any case
 the data gets moved to the shared db and removed from the user's db.
-** userids, roles and groups
+*** userids, roles and groups
 - userids: Userid is always a user's email. His database is called:
   private_[email]_[md5hash-of-email] where email is normalized to only contain valid
   chars (only lowercase characters (a-z), digits (0-9), or any of the characters
   _, $, (, ), +, -, and / are allowed for database names). This way a user can
   deduce his private database from his email address, and it's unique, even
   across couchdb instances.
-** normalized
+*** normalized
 Denormalize when convenient, but ultimately structure is defined by normalized
 docs.
 Views can be set up to fetch all relevant (joined) docs in one request.
 Validate Doc Read in rcouch doesn't work on views, so this necessitates
 database per user. Vdr can be used other ways and in other places though. If
 vdr is not available a proxy can be installed and configured
-** generic doc structure:
+*** generic doc structure:
    type: comment, article, product etc
    owner: id of creator/owner of doc
    last-modified
@@ -191,25 +192,25 @@ access:
  non-existent:
 All docs can have a access prop:
 - non existent: only own
-** possible proxy need for:
+*** possible proxy need for:
 - block _all_dbs so that rean can do maintenance
 - alternative to vdr and rcouch:
   - block read on reception db and aggregate
 - disallow anonymous signup to couchdb
 
-** Rebuild with just _users, aggregate, config.js, a couchdb instance and cape
+*** Rebuild with just _users, aggregate, config.js, a couchdb instance and cape
 This means you can delete private and shared databases when not needed or
 accessed for a while. Users should send ping messages to keep a database alive,
 because they can expire and would have to be rebuilt when a user log in again.
-* specs
-** messages
-***   Reception:
+** specs
+*** messages
+****   Reception:
 - signup|forgotpwd|confirm
 - mailbox? [username]
   if backend has forgot to setup user's mailbox, or it got wiped or whatever,
   client can send a msg with her username. Backend can then set up a mailbox and
   can send confirmation to public. Users' mailboxes are called mailbox_username
-*** Mailbox:
+**** Mailbox:
 - signedin
   This is instead of CouchDB session tracking, since I don't have access to
   it. Unless session tracker reads couch's log.
@@ -224,15 +225,15 @@ because they can expire and would have to be rebuilt when a user log in again.
 - database?
   Request for name(s) of database(s) client can use. By default a user's
   database is called db_username.
-** client is totally independent from backend database and vice versa
-   Niether should expect or demand anything from the other. Client should
-   politely request for resources and if not granted solve its own problems.
-   Backend workers though should do their best to accomodate and anticipate
-   clients' needs, and organise things as best as they can.  This means keeping
-   public, reception, postoffice and mailboxes in order, and any replications
-   that are needed between them etc, and respond to client messages as well as possible.
+*** client is totally independent from backend database and vice versa
+    Niether should expect or demand anything from the other. Client should
+    politely request for resources and if not granted solve its own problems.
+    Backend workers though should do their best to accomodate and anticipate
+    clients' needs, and organise things as best as they can.  This means keeping
+    public, reception, postoffice and mailboxes in order, and any replications
+    that are needed between them etc, and respond to client messages as well as possible.
 
-** logging in and out
+*** logging in and out
 - on signup mailbox should have been made.
   if not or is deleted:
   1) client can send msg to reception, 'mailbox?', confirm/error in
@@ -244,13 +245,13 @@ because they can expire and would have to be rebuilt when a user log in again.
   because couch doesn't tie sessions to users/logins unfortunately
   or client can logout msg when it can't read its own mailbox?
 
-** client needs to delete message after having read it
-  backend still purges msg after a certain time. In case of public database
-  user can only update existing msg doc (enforced by vdu). Same with msg
-  written to mailbox or personal database.
+*** client needs to delete message after having read it
+   backend still purges msg after a certain time. In case of public database
+   user can only update existing msg doc (enforced by vdu). Same with msg
+   written to mailbox or personal database.
 
-* arguments for and against
-** no doc property signature access OR?
+** arguments for and against
+*** no doc property signature access OR?
 changes the ps function means rewriting all filters and all associated reps, and
 also deleteing all databases since we can't have deleted docs in dbs. They don't
 get replicated to when the doc is allowed again. So the db needs to be deleted
@@ -259,13 +260,13 @@ You'd have to test the filter against every single doc.
 OR: change ps function, then use a view to get all docs that have a as hash
 different from the calculated as hash. Delete the docs in the calculated as hash
 (db name) databases.
-** use separate databases reception and public
-  semi public such as reception (wo) and public (ro) should not be merged with
-  private databases in case the read and write validate and security objects
-  are not configured properly, by accident or bugs or whatever. Better to keep
-  separate for security reasons, but in principle everything could be done with
-  read and write validate
-** separate mailbox from data databases at all times
+*** use separate databases reception and public
+   semi public such as reception (wo) and public (ro) should not be merged with
+   private databases in case the read and write validate and security objects
+   are not configured properly, by accident or bugs or whatever. Better to keep
+   separate for security reasons, but in principle everything could be done with
+   read and write validate
+*** separate mailbox from data databases at all times
 - same reason as for the semipublic databases. Security. New signups have no
  right to anything initially, so they shouldn't be able to write to or read
  from app data databases, not even secured through vuds and vrds and
@@ -279,78 +280,78 @@ different from the calculated as hash. Delete the docs in the calculated as hash
 - but client needs to listen to two databases sometimes, but only needs to
   listen to mailbox when interested, for instance when it has sent a request
   and it wants confirmation.
-** one database per user, combining data and mail, sometimes two
+*** one database per user, combining data and mail, sometimes two
 - only one connection.
 - but sometimes a user gets data from a group database but needs to have
   connection for individual msgs at all times so would have permanent 2
   connection going then.
-** separate app logic and housekeeping logic
+*** separate app logic and housekeeping logic
 vuds and vrds are going to have a lot of app logic in them, like to keep this
 logic separate from housekeeping/basic access logic
 
 
 
-* Databases
-** reception
+** Databases
+*** reception
+    
+    This database is publicly writable. Through the use of validate_doc_update one
+    can ensure only certain types of documents get written. For instance attachment
+    can be blocked, or overly big field values etc. Any message written get picked
+    up =cape= (through the changes api) and immediately deleted from the
+    =reception= database. This database is supposed to be write-only. At the moment
+    this is not possible using CouchDB only (version 1.6), however a simple proxy
+    server in front of the public face of CouchDB can fix this by only allowing
+    POST and PUT requests to this database. A fork of CouchDB called [[https://github.com/rcouch/rcouch/wiki][rcouch]] does
+    have write-only databases and read validation support. It's supposed to [[https://blogs.apache.org/couchdb/entry/merging_rcouch][merge]]
+    with CouchDB 'soon'.
+    
+*** public
+
+  This is not publicly writable, however anybody can read from it. It is used to
+  transmit little messages of success or error to various requests made through
+  =reception=.
+
+  When messages to =reception= include a 'callback' id, the client sending the
+  message can receive the feedback from =cape= through the =public= database by
+  listening to changes in this database, but filtered by this callback id. This
+  filtering happens on the server, so the only time the client is contacted is
+  when a relevant message gets written to =public= by =cape=. Of course a client
+  can listen to all changes, and depending on how many people are trying to sign
+  up or are going through 'forgot pwd' procedures, quite a few messages can get
+  read. The messages (docs) themselves contain nothing but a callback id and a
+  field with a string containing information such as 'password updated', or
+  'email missing' or 'email sent' or 'too short password' etc. This is a security
+  leak, but very big.
+
+*** temp
+
+   Internal database used by =cape= to remember messages posted to =reception=
+   so the proper follow up action can be taken in response to further messages
+   from the same client.
    
-   This database is publicly writable. Through the use of validate_doc_update one
-   can ensure only certain types of documents get written. For instance attachment
-   can be blocked, or overly big field values etc. Any message written get picked
-   up =cape= (through the changes api) and immediately deleted from the
-   =reception= database. This database is supposed to be write-only. At the moment
-   this is not possible using CouchDB only (version 1.6), however a simple proxy
-   server in front of the public face of CouchDB can fix this by only allowing
-   POST and PUT requests to this database. A fork of CouchDB called [[https://github.com/rcouch/rcouch/wiki][rcouch]] does
-   have write-only databases and read validation support. It's supposed to [[https://blogs.apache.org/couchdb/entry/merging_rcouch][merge]]
-   with CouchDB 'soon'.
-   
-** public
-
- This is not publicly writable, however anybody can read from it. It is used to
- transmit little messages of success or error to various requests made through
- =reception=.
-
- When messages to =reception= include a 'callback' id, the client sending the
- message can receive the feedback from =cape= through the =public= database by
- listening to changes in this database, but filtered by this callback id. This
- filtering happens on the server, so the only time the client is contacted is
- when a relevant message gets written to =public= by =cape=. Of course a client
- can listen to all changes, and depending on how many people are trying to sign
- up or are going through 'forgot pwd' procedures, quite a few messages can get
- read. The messages (docs) themselves contain nothing but a callback id and a
- field with a string containing information such as 'password updated', or
- 'email missing' or 'email sent' or 'too short password' etc. This is a security
- leak, but very big.
-
-** temp
-
-  Internal database used by =cape= to remember messages posted to =reception=
-  so the proper follow up action can be taken in response to further messages
-  from the same client.
-  
-** private_[email]_[hash-of-email]
-  Email is normalized so couchb accepts the name. The hash is there to
-  guarantee uniqueness nonetheless.
-  secObj = { admins: { names:[], roles:[]},
-  members: { names: ["<email>"], roles: []} }
-  These are only created when there docs with only one reader.
-** shared_[access_object_hash]
+*** private_[email]_[hash-of-email]
+   Email is normalized so couchb accepts the name. The hash is there to
+   guarantee uniqueness nonetheless.
+   secObj = { admins: { names:[], roles:[]},
+   members: { names: ["<email>"], roles: []} }
+   These are only created when there docs with only one reader.
+*** shared_[access_object_hash]
 All docs with a certain access signature go in here. They get only created when
 there are docs with these access signatures.
-** stats
-   session tracker agent can send stats or log messages etc.
-* agents
-** sessiontracker
-  deals with messages such as signedin, loggingout and ping, because these messages
-  are reliable to a point only, a best guess should be made. For instance a
-  client can send pings when activity is detected. But if client logs in and
-  only listens to changes sessiontracker doesn't know about them. Session
-  tracker could listen to changes on client's databases so it knows when to
-  write to it. Or other agents could notify it when they notice activity from a
-  client. Or it could actively monitor/tail couch's log. At debug levels auth
-  events get logged. You would have to parse it and make sense of it.
-* implement:
-** trello
+*** stats
+    session tracker agent can send stats or log messages etc.
+** agents
+*** sessiontracker
+   deals with messages such as signedin, loggingout and ping, because these messages
+   are reliable to a point only, a best guess should be made. For instance a
+   client can send pings when activity is detected. But if client logs in and
+   only listens to changes sessiontracker doesn't know about them. Session
+   tracker could listen to changes on client's databases so it knows when to
+   write to it. Or other agents could notify it when they notice activity from a
+   client. Or it could actively monitor/tail couch's log. At debug levels auth
+   events get logged. You would have to parse it and make sense of it.
+** implement:
+*** trello
 everyone their own multiple todo lists, organized by board
 share by the board/list/item, share ro or rw
 when owned/shared and writable any edits should propogate and magically change
@@ -358,63 +359,63 @@ at other peoples boards/lists/items
 when owned/shared should be  able to share further when allowed
 when client shares something it should send msg/notification to other user it
 shares with.
-** shop
-** wiki
-** social network
-** inventory
+*** shop
+*** wiki
+*** social network
+*** inventory
 
-** gregs's project
-  people have roles such as family, circle, extended fammily, service provider
-  etc every doc has an access level, chosen from different set dependent on type
-  of doc.  different types of docs have different set of access levels then for
-  a certain doc type lets say medical info (taxonomy): set for every role
-  whether they can create/update/delete read a document of this type.  So in
-  other words, every doc has a type_access-level access role assigned, then in
-  the reps access scenario (one database per role/id), every db gets assigned
-  the proper roles. Same strategy for the cud, if some with the database's role
-  writes, check the secObj of the db whether they can cud.
-  So Greg's config-access table is modified by modifying the secObj of every db
-  that represents a role.
+*** gregs's project
+   people have roles such as family, circle, extended fammily, service provider
+   etc every doc has an access level, chosen from different set dependent on type
+   of doc.  different types of docs have different set of access levels then for
+   a certain doc type lets say medical info (taxonomy): set for every role
+   whether they can create/update/delete read a document of this type.  So in
+   other words, every doc has a type_access-level access role assigned, then in
+   the reps access scenario (one database per role/id), every db gets assigned
+   the proper roles. Same strategy for the cud, if some with the database's role
+   writes, check the secObj of the db whether they can cud.
+   So Greg's config-access table is modified by modifying the secObj of every db
+   that represents a role.
 
-** edge
+*** edge
 
 
-   
-* TODO
+    
+** TODO
 
-** disallow singupt tom@email.com and Tom@email.com
+*** disallow singupt tom@email.com and Tom@email.com
 Record and use the email local capitalisations as sgned up, but don't allow
 different capitalisations of local to sign up.
-** monitor does no work right now
-  is called but work function is empty
-** follow should stop listening when no response
-   because the browser hangs/eats up all memory
-** rewrite backend in clojure
-** rewrite/write frontend in clojurescript
-** client should stop listening when error, since it locks up the browser/computer
-   just try again now and again, or on the request of user instead.
-** make sure deletion of public and temp is self-repairing
-** on signup create user mailbox
-  monitor existence (for every user, infrequent, once per 5 minutes or rarer),
-  subscribe to db changes, react to nomailbox msg in reception from user,
-  username: is added and from: is added to msg, and ack send to public
-  (ok/error); Client should try periodically when mailbox is not there, to see
-  if it's back
-** validate_read_doc:
+*** monitor does no work right now
+   is called but work function is empty
+*** follow should stop listening when no response
+    because the browser hangs/eats up all memory
+*** rewrite backend in clojure
+*** rewrite/write frontend in clojurescript
+*** client should stop listening when error, since it locks up the browser/computer
+    just try again now and again, or on the request of user instead.
+*** make sure deletion of public and temp is self-repairing
+*** on signup create user mailbox
+   monitor existence (for every user, infrequent, once per 5 minutes or rarer),
+   subscribe to db changes, react to nomailbox msg in reception from user,
+   username: is added and from: is added to msg, and ack send to public
+   (ok/error); Client should try periodically when mailbox is not there, to see
+   if it's back
+*** validate_read_doc:
 access based on user role, doc type and taxonomy.
-** send inter user message:
+*** send inter user message:
 - send msg to mailbox > instant:true/false from:username (validated by to be
 username vud) msg:mail to:otherusername content:"bla bla"
 - gets replicated to postoffice, or postoffice listens to changes in every mailbox?
 - postoffice puts msg in recipient's (:to) mailbox
 - if instant=true, remove from mailboxes after timeout, otherwise leave in
   place?
-** make sure log messages are an independant stream to be
+*** make sure log messages are an independant stream to be
 picked up a separate process!!!!  Both from cape backend and frontend.
-** how about tests?
+*** how about tests?
 - clojurescript repl to automate tests
 - automated browser testing?
-** how about csrf?
+*** how about csrf?
 Several things have to happen for cross-site request forgery to succeed:
 - The attacker must target either a site that doesn't check the referrer header
   (which is common) or a victim with a browser or plugin that allows referer
@@ -432,7 +433,7 @@ victim is logged into the target site.
 >> only vulnerability are POST requests?
 http://en.wikipedia.org/wiki/Cross-site_request_forgery
 
-** watch out for xss!!!
+*** watch out for xss!!!
 sanitize anything that can get rendered by the browser,
 for instance an agent can rewrite docs, or vud can disallow unescaped output
 https://www.npmjs.org/package/validator
@@ -441,113 +442,113 @@ Apply csp!!!!
 http://www.html5rocks.com/en/tutorials/security/content-security-policy/
 Maybe a proxy can add the header, or it can be inserted as a meta tag.
 
-** if cb in mailbox is called with error auto fix it!!!
-** how to deal with backlog in mailboxes?
-** make reception unreadable by adding proxy or use rcouch
-** test starting from scratch, empty database
-** passwordless login
-  this just needs adaption on the client side
-** somebody should be monitoring the agents and restart them !!!
-** do cape agents needs less than full _admin rights?
-  But nobody else can create databases though.
-** formalize error msgs!!!
-  just strings for now
-** enable https for couch
-** restart listeners to mailboxes when stopped
-** setup logrotate for couchdb!!
-   http://wiki.apache.org/couchdb/Installing_on_Ubuntu
-   http://java.dzone.com/articles/how-install-couch-db-15-ubuntu
-** couchdb is timing out the reps trying!!!
-** how to setup frontend cape.js?
+*** if cb in mailbox is called with error auto fix it!!!
+*** how to deal with backlog in mailboxes?
+*** make reception unreadable by adding proxy or use rcouch
+*** test starting from scratch, empty database
+*** passwordless login
+   this just needs adaption on the client side
+*** somebody should be monitoring the agents and restart them !!!
+*** do cape agents needs less than full _admin rights?
+   But nobody else can create databases though.
+*** formalize error msgs!!!
+   just strings for now
+*** enable https for couch
+*** restart listeners to mailboxes when stopped
+*** setup logrotate for couchdb!!
+    http://wiki.apache.org/couchdb/Installing_on_Ubuntu
+    http://java.dzone.com/articles/how-install-couch-db-15-ubuntu
+*** couchdb is timing out the reps trying!!!
+*** how to setup frontend cape.js?
 With modules? So then we need bb-server!
 But source needs to be in cape
 Or just test in node, just don't use node dependencies,
 and also test in test-cape now and then, to see if it has the same results?
 
-** setup basic comm between front and backend
-** hide follow under vouchdb.changes in the node version of vouchdb
-** replace jquery dependency in node and browser in vouchdb!!
+*** setup basic comm between front and backend
+*** hide follow under vouchdb.changes in the node version of vouchdb
+*** replace jquery dependency in node and browser in vouchdb!!
 replace vouch_couch with vouch_cradle on node
 or factor out jquery on node
 or replace with request:
 https://github.com/iriscouch/browser-request/
 
-** have env.js get is vars from the ENV
-  now it's hardbaked, but under version source control
+*** have env.js get is vars from the ENV
+   now it's hardbaked, but under version source control
 
-** DONE implement wipe all designdocs in rean.js
-  for that matter, wipe all cape databases as well, and all users and all
-  replications
+*** DONE implement wipe all designdocs in rean.js
+   for that matter, wipe all cape databases as well, and all users and all
+   replications
 
-** DONE lock down npm dependencies of 3rd party libs!!
-   run npm shrinkwrap to find out version numbers
-** DONE store mandril email password in ENV
-** DONE add from/to fields to msgs
-** DONE all jobs running permanently should be agents!!
-** DONE vouch_couch creates a session but
-   sessions expire, admin:irma needs to be baked into all requests
-** DONE enable cors for couchdb when initing
-** DONE unique email/username when signing up!!!
-** DONE lock down public from writing, is read only
-** DONE set filter in public for callback
-** DONE set view to list names in _users
-** DONE lock down temp db from writing/reading
-** DONE put a validate_doc_update on the mailboxes!!
+*** DONE lock down npm dependencies of 3rd party libs!!
+    run npm shrinkwrap to find out version numbers
+*** DONE store mandril email password in ENV
+*** DONE add from/to fields to msgs
+*** DONE all jobs running permanently should be agents!!
+*** DONE vouch_couch creates a session but
+    sessions expire, admin:irma needs to be baked into all requests
+*** DONE enable cors for couchdb when initing
+*** DONE unique email/username when signing up!!!
+*** DONE lock down public from writing, is read only
+*** DONE set filter in public for callback
+*** DONE set view to list names in _users
+*** DONE lock down temp db from writing/reading
+*** DONE put a validate_doc_update on the mailboxes!!
 otherwise browser can't access it!!!
-** DONE mailboxes need to be locked down:
+*** DONE mailboxes need to be locked down:
 set security object
 add appropriate doc_validate_update
 
 
-* research
-  http://wiki.apache.org/couchdb/PerDocumentAuthorization
-** other logins than couchdb native
+** research
+   http://wiki.apache.org/couchdb/PerDocumentAuthorization
+*** other logins than couchdb native
 1. use couchdb pluggable auth mechanisms
 2. put nodejs in front, forward to couch, but use password.js or something to
    authenticate via github/facebook/google/twitter etc
-* resources
- https://github.com/etrepum/couchperuser
- https://github.com/pegli/couchdb-dbperuser-provisioning/blob/master/lib/provision.js
- https://github.com/flatiron/cradle
- https://www.npmjs.org/package/couchdb-expired
- https://www.npmjs.org/package/couchdb-tools
+** resources
+  https://github.com/etrepum/couchperuser
+  https://github.com/pegli/couchdb-dbperuser-provisioning/blob/master/lib/provision.js
+  https://github.com/flatiron/cradle
+  https://www.npmjs.org/package/couchdb-expired
+  https://www.npmjs.org/package/couchdb-tools
 
- using continuous for changes feed and has email queue example in tests:
- https://github.com/mikeal/dbemitter
+  using continuous for changes feed and has email queue example in tests:
+  https://github.com/mikeal/dbemitter
 
- Convert an NPM package command-line program into a web page:
- https://github.com/iriscouch/browser_bin
+  Convert an NPM package command-line program into a web page:
+  https://github.com/iriscouch/browser_bin
 
- Detect security issues, large or small, in a CouchDB server
- https://github.com/iriscouch/audit_couchdb
+  Detect security issues, large or small, in a CouchDB server
+  https://github.com/iriscouch/audit_couchdb
 
-* pouchdb considerations
-** replication persistence
+** pouchdb considerations
+*** replication persistence
 They should never stop!!!
 https://github.com/HubSpot/offline/
 Automatically display online/offline indication to your users. #hubspot-open-source
 http://pouchdb.com/api.html#replication
 https://groups.google.com/forum/#!topic/pouchdb/9ywFZ6ceqNc
 https://www.bountysource.com/issues/1034011-persistent-replications?utm_campaign=plugin&utm_content=tracker%2F52197&utm_medium=issues&utm_source=github
-** replication size
+*** replication size
 How much to replicate and how to dump old data?
 Without then deleting the docs on the server when removed from client in a
 synced replication?
 
-* good to know
+** good to know
 
-** couchdb needs to serve pages..
-  just load as attachment to doc and link to it as database/doc/attachment.html
-** start a coucbd instance
-   install build-couchdb, follow instructions in its readme
-   https://github.com/jhs/build-couchdb
-   see bin/couchdb and bin/couch.ini for starting it
+*** couchdb needs to serve pages..
+   just load as attachment to doc and link to it as database/doc/attachment.html
+*** start a coucbd instance
+    install build-couchdb, follow instructions in its readme
+    https://github.com/jhs/build-couchdb
+    see bin/couchdb and bin/couch.ini for starting it
 
-** using follow on node, and vouchdb.changes on browser.
-  longpoll on browser (vouchdb.changes), or perhaps event-source?
-  http://couchdb.readthedocs.org/en/latest/api/database/changes.html#event-source
+*** using follow on node, and vouchdb.changes on browser.
+   longpoll on browser (vouchdb.changes), or perhaps event-source?
+   http://couchdb.readthedocs.org/en/latest/api/database/changes.html#event-source
 
-** install  and start docker with couchdb
+*** install  and start docker with couchdb
 Install docker on Ubuntu 13.10 Saucy:
  https://docs.docker.com/installation/ubuntulinux/#ubuntu-raring-1304-and-saucy-1310-64-bit
 Mint needs some extra packages, see bottom of page
@@ -555,7 +556,7 @@ https://registry.hub.docker.com/u/klaemo/couchdb/
 Start docker:
 docker run -d -p 5984:5984 --name couchdb klaemo/couchdb
 
-** reverse proxy for haproxy
+*** reverse proxy for haproxy
 https://github.com/foosel/OctoPrint/wiki/Reverse-proxy-configuration-examples
 
 ction wait(couchdb, db, cb) {
@@ -576,7 +577,7 @@ ction wait(couchdb, db, cb) {
     };
         log(config);
    l
-** persona:
+*** persona:
 Add this script or download and include -that- <script
 src="https://login.persona.org/include.js"></script> Include persona-buttons.css
 Include cookie.js Include persona.js with the initPersona function Call it
@@ -607,9 +608,9 @@ email address
 
 
 
-* doing
-** script to start/reset rcouch
-** clean up databases reception, temp and public
+** doing
+*** script to start/reset rcouch
+*** clean up databases reception, temp and public
    reception: should stay clean, but check periodically and if there's more than n
    docs, shut it down for writing by adding a role or name, wipe it, and make it
    accessible again
